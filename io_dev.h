@@ -31,6 +31,9 @@ int dev_fnd;
 #define TEXT_LCD_LINE_BUFF 16
 #define TEXT_LCD_MAX_BUFF 32
 #define FPGA_TEXT_LCD_DEVICE "/dev/fpga_text_lcd"
+typedef enum{
+	TEXT_LCD_CLEAR, TEXT_LCD_LSHIFT, TEXT_LCD_EDIT
+}TEXT_LCD_OP;
 
 //DOT DEVICE
 #define FPGA_DOT_DEVICE "/dev/fpga_dot"
@@ -50,14 +53,11 @@ int dev_dip_switch;
 #define MODE_DOWN 114
 int dev_input_event;
 
-typedef enum{
-	NONE, BACK, VOL_UP, VOL_DOWN, SW
-}INPUT_TYPE;
-
 int init_dev();
 int output_led(int value);
 int output_fnd(int value);
-int output_text_lcd(const char str1[],const char str2[]);
+int text_lcd_buff_mdf(char character, int pos, TEXT_LCD_OP op);
+int output_text_lcd();
 int output_dot(char character);
 void user_signal1(int sig);
 int input_process();

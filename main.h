@@ -11,7 +11,8 @@
 
 #define INPUT_KEY 0x1234
 #define OUTPUT_KEY 0x5678
-
+#define TRUE 1
+#define FALSE 0
 typedef struct{
 	long mtype;
 	int mvalue;
@@ -21,6 +22,10 @@ typedef enum {
 	MSG_INPUT_EVENT, MSG_DIP_SWITCH,		//INPUT
 	MSG_LED, MSG_FND, MSG_TEXT_LCD, MSG_DOT	//OUTPUT
 }MSG_TYPE;
+
+typedef enum{
+	NONE, BACK, VOL_UP, VOL_DOWN
+}INPUT_TYPE;
 
 #define MODE_NUM 4
 typedef enum{

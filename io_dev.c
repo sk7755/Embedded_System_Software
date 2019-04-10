@@ -27,11 +27,15 @@ unsigned char fpga_set_blank[10] = {
 };
 unsigned char quit = 0;
 
+unsigned char text_lcd_buff[TEXT_LCD_MAX_BUFF];
+int text_lcd_i = 0;
+
 int init_dev()
 {
 	//LED DEVICE OPEN BY MMAP
 	unsigned long *fpga_addr = 0;
 	int fd;
+
 	fd = open("/dev/mem", O_RDWR | O_SYNC);
 	if(fd < 0){
 		perror("/dev/mem open error");
@@ -60,6 +64,7 @@ int init_dev()
 		printf("TEXT_LCD : Device open error : %s\n",FPGA_TEXT_LCD_DEVICE);
 		exit(1);
 	}
+	output_text_lcd(0,TEXT_LCD_CLEAR);
 
 	//DOT DEVICE OPEN BY DRIVER
 	dev_dot = open(FPGA_DOT_DEVICE, O_WRONLY);
@@ -139,23 +144,36 @@ int output_fnd(int value)
 	return 1;
 }
 
-int output_text_lcd(const char str1[], const char str2[])
+int text_lcd_buff_mdf(char character,int pos, TEXT_LCD_OP op)
 {
-	int str1_size = strlen(str1);
-	int str2_size = strlen(str2);
+	int i;
 	
-	if(str1_size > TEXT_LCD_LINE_BUFF || str2_size > TEXT_LCD_LINE_BUFF)
-	{
-		printf("TEXT_LCD : 16 alphanumeric characters on a line! - strlen1 %d strlen2 %d\n",str1_size, str2_size);
-		return 0;
+	switch(op){
+		case TEXT_LCD_CLEAR :
+			for(i=0;i<TEXT_LCD_MAX_BUFF;i++)
+				text_lcd_buff[i] = ' ';
+			break;
+		case TEXT_LCD_LSHIFT :
+			for(i=0;i<TEXT_LCD_MAX_BUFF - 1;i++)
+				text_lcd_buff[i] = text_lcd_buff[i+1];
+			text_lcd_buff[TEXT_LCD_MAX_BUFF-1] = ' ';
+			break;
+		case TEXT_LCD_EDIT :
+			if(pos < 0 || pos >= TEXT_LCD_MAX_BUFF){
+				printf("TEXT_LCD : Can't modify that position %d!\n",pos);
+				return 0;
+			}
+			text_lcd_buff[pos] = character;
+			break;
+		default :
+			;
 	}
-	unsigned char str[TEXT_LCD_MAX_BUFF];
-	
-	strncat(str, str1,str1_size);
-	memset(str+str1_size, ' ',TEXT_LCD_LINE_BUFF - str1_size);
-	strncat(str, str2,str2_size);
-	memset(str+str2_size, ' ',TEXT_LCD_LINE_BUFF - str2_size);
-	write(dev_text_lcd, str, TEXT_LCD_MAX_BUFF);
+	return 1;
+}
+
+int output_text_lcd()
+{
+	write(dev_text_lcd, text_lcd_buff, TEXT_LCD_MAX_BUFF);
 
 	return 1;
 }
@@ -192,7 +210,8 @@ int input_process()
 	MsgType msg;
 
 	msg.mtype = 1;
-	
+
+/*	
 	int msg_size = sizeof(MsgType);
 	int i = 0;
 	while(1){
@@ -208,7 +227,7 @@ int input_process()
 
 		usleep(1000000);
 	}
-/*
+
 	unsigned char dip_sw_buff = 0;
 	struct input_event ev[INPUT_EVENT_BUFF_SIZE];
 	int size = sizeof(struct input_event);
@@ -241,10 +260,32 @@ int output_process()
 
 	while(1){
 		printf("I'm output_process\n");
-		int nbytes = msgrcv(queue_id, (void*)&msg, msg_size, 1,0);
-		if(nbytes > 0)
-			printf("Output Process : Message recieve %s\n",msg.mtext);
+		int nbytes = msgrcv(queue_id, (void*)&msg, msg_size, 0,0);
+		if(nbytes < 0){
+			printf("Output Process : Message recieve error!\n");
+			return 0;
+		}
+		else if(nbytes > 0){
+			switch(msg.mtype){
+				case MSG_LED :
+					output_led(msg.mvalue);
+					break;
+				case MSG_FND :
+					output_fnd(msg.mvalue);
+					break;
+				case MSG_TEXT_LCD :
+					output_text_lcd();
+					break;
+				case MSG_DOT :
+					output_dot(msg.mvalue);
+					break;
+				default :
+					;
+			}
+		}
+
 		usleep(400000);
 	}
+
 
 }

@@ -27,7 +27,7 @@ int main()
 		return 0;
 	}
 	
-	while(true){
+	while(TRUE){
 		msg_rcv_update();
 		
 		switch(current_mode){
@@ -36,10 +36,11 @@ int main()
 			case COUNTER :
 			case TEXT_EDITOR :
 			case DRAW_BOARD :
-			case default :
+			default :
+				;
 		}
 	}
-
+/*
 	while(1){
 		printf("I'm main process\n");
 		int nbytes = msgrcv(ip_queue_id, (void*)&input_msg, msg_size, 1, 0);
@@ -55,6 +56,7 @@ int main()
 		}
 		usleep(1000000);
 	}
+	*/
 	//close_dev();
 	return 0;
 }
@@ -72,8 +74,8 @@ void init_msg_queue()
 
 void close_msg_queue()
 {
-	msgctl(ip_queue_id, IPC_RMID, (struct msquid_ds *)NULL);
-	msgctl(op_queue_id, IPC_RMID, (struct msquid_ds *)NULL);
+	msgctl(ip_queue_id, IPC_RMID, NULL);
+	msgctl(op_queue_id, IPC_RMID, NULL);
 	return;
 }
 
@@ -103,10 +105,12 @@ int msg_rcv_update()
 					case VOL_DOWN:
 						current_mode = (current_mode - 1) % MODE_NUM;
 						break;
-					case default:
+					default:
+						;
 				}
 				break;
-			case default:
+			default:
+				;
 		}
 	}
 	return 1;
