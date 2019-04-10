@@ -1,30 +1,31 @@
 #include "io_dev.h"
 
-int main()
-{
-	init_dev();
-	
-	printf("1. led, 2. fnd : ");
-	int type;
-	scanf("%d",&type);
+unsigned char fpga_number[10][10] = {
+	{0x3e,0x7f,0x63,0x73,0x73,0x6f,0x67,0x63,0x7f,0x3e}, // 0
+	{0x0c,0x1c,0x1c,0x0c,0x0c,0x0c,0x0c,0x0c,0x0c,0x1e}, // 1
+	{0x7e,0x7f,0x03,0x03,0x3f,0x7e,0x60,0x60,0x7f,0x7f}, // 2
+	{0xfe,0x7f,0x03,0x03,0x7f,0x7f,0x03,0x03,0x7f,0x7e}, // 3
+	{0x66,0x66,0x66,0x66,0x66,0x66,0x7f,0x7f,0x06,0x06}, // 4
+	{0x7f,0x7f,0x60,0x60,0x7e,0x7f,0x03,0x03,0x7f,0x7e}, // 5
+	{0x60,0x60,0x60,0x60,0x7e,0x7f,0x63,0x63,0x7f,0x3e}, // 6
+	{0x7f,0x7f,0x63,0x63,0x03,0x03,0x03,0x03,0x03,0x03}, // 7
+	{0x3e,0x7f,0x63,0x63,0x7f,0x7f,0x63,0x63,0x7f,0x3e}, // 8
+	{0x3e,0x7f,0x63,0x63,0x7f,0x3f,0x03,0x03,0x03,0x03} // 9
+};
 
-	int value;
-	if(type == 1)
-	{
-		printf("input value : ");
-		scanf("%d",&value);
-		output_led(value);
-	}
-	if(type == 2)
-	{
-		printf("input value : ");
-		scanf("%d",&value);
-		output_fnd(value);
-	}
+unsigned char fpga_A[26][10] = {
+	{0x1c,0x36,0x63,0x63,0x63,0x7f,0x7f,0x63,0x63,0x63}, // A
+};
 
-	close_dev();
-	return 0;
-}
+unsigned char fpga_set_full[10] = {
+	// memset(array,0x7e,sizeof(array));
+	0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f,0x7f
+};
+unsigned char fpga_set_blank[10] = {
+	// memset(array,0x00,sizeof(array));
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+};
+unsigned char quit = 0;
 
 int init_dev()
 {
@@ -185,6 +186,29 @@ void user_signal1(int sig)
 
 int input_process()
 {
+	key_t key = INPUT_KEY;
+	int queue_id = msgget(key,IPC_CREAT | 0666);
+
+	MsgType msg;
+
+	msg.mtype = 1;
+	
+	int msg_size = sizeof(MsgType);
+	int i = 0;
+	while(1){
+		printf("I'm input_process\n");
+		sprintf(msg.mtext, "%d",i++);
+
+		if(msgsnd(queue_id,(void *)&msg, msg_size, IPC_NOWAIT) < 0){
+			printf("Input Process : Message Send Fail!\n");
+			return 0;
+		}
+		else
+			printf("Input Process : Message Send %d!!\n",i-1);
+
+		usleep(1000000);
+	}
+/*
 	unsigned char dip_sw_buff = 0;
 	struct input_event ev[INPUT_EVENT_BUFF_SIZE];
 	int size = sizeof(struct input_event);
@@ -193,14 +217,34 @@ int input_process()
 	(void)signal(SIGINT, user_signal1);
 
 	while(!quit){
-		usleep(400000);
+		usleep(1000000);
 		if((rd = read(dev_input_event,ev,size * INPUT_EVENT_BUFF_SIZE)) < size){
 			printf("INPUT PROCESS : read()\n");
 			return 0;
 		}
-		/*추가 하도록 */
+		//추가 하도록
 		read(dev_dip_switch, &dip_sw_buff, 1);
 
 	}
+*/
 	return 1;
+}
+
+int output_process()
+{
+	key_t key = OUTPUT_KEY;
+	int queue_id = msgget(key,IPC_CREAT | 0666);
+
+	MsgType msg;
+	
+	int msg_size = sizeof(MsgType);
+
+	while(1){
+		printf("I'm output_process\n");
+		int nbytes = msgrcv(queue_id, (void*)&msg, msg_size, 1,0);
+		if(nbytes > 0)
+			printf("Output Process : Message recieve %s\n",msg.mtext);
+		usleep(400000);
+	}
+
 }
