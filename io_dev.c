@@ -32,6 +32,8 @@ int text_lcd_i = 0;
 
 int init_dev()
 {
+	if(IN_CSPRO)
+		return 1;
 	//LED DEVICE OPEN BY MMAP
 	unsigned long *fpga_addr = 0;
 	int fd;
@@ -87,13 +89,9 @@ int init_dev()
 		printf("PUSH_SWITCH : Device open error : %s\n",FPGA_PUSH_SWITCH_DEVICE);
 		return 0;
 	}
-	//(void)signal(SIGINT,user_signal1);
-
-	//INPUT_EVENT DEVICE OPEN BY DRIVER
+	
 	dev_input_event = open(INPUT_EVENT_DEVICE, O_RDWR | O_NONBLOCK);
 	
-	//int flags = fcntl(dev_input_event,F_GETFD);
-	//fcntl(dev_input_event,F_SETFD,flags | O_NONBLOCK);
 	if(dev_input_event < 0){
 		printf("INPUT_EVENT : Device open error : %s\n",INPUT_EVENT_DEVICE);
 		return 0;
@@ -104,6 +102,8 @@ int init_dev()
 
 int close_dev()
 {
+	if(IN_CSPRO)
+		return 1;
 	munmap(led_addr, 4096);
 	close(dev_fnd);
 	close(dev_text_lcd);
@@ -119,7 +119,8 @@ int output_led(int value)
 {
 	if(PRINT_DEBUG)
 		printf("output led - %x\n",value);
-	//return 1;
+	if(IN_CSPRO)
+		return 1;
 	if(value < 0 || value > 255)
 	{
 		printf("LED : Invalid range! -%d\n",value);
@@ -134,7 +135,8 @@ int output_fnd(int value)
 {
 	if(PRINT_DEBUG)
 		printf("output fnd - %d\n",value);
-	//return 1;
+	if(IN_CSPRO)
+		return 1;
 	if(value <0 || value >9999)
 	{
 		printf("FND : Invalid range! -%d\n",value);
@@ -194,7 +196,8 @@ int output_text_lcd()
 {
 	if(PRINT_DEBUG)
 		printf("output text lcd - %s\n",text_lcd_buff);
-	//return 1;
+	if(IN_CSPRO)
+		return 1;
 	write(dev_text_lcd, text_lcd_buff, TEXT_LCD_MAX_BUFF);
 
 	return 1;
@@ -204,7 +207,8 @@ int output_dot(char character)
 {
 	if(PRINT_DEBUG)
 		printf("output dot -%c\n",character);
-	//return 1;
+	if(IN_CSPRO)
+		return 1;
 	int str_size;
 
 	if(character == 0){
