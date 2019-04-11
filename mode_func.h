@@ -12,6 +12,7 @@
 #include "io_dev.h"
 
 extern int op_queue_id;
+int mode_init;
 
 int output_msg_send(long mtype, int mvalue);
 int mode_clock(int sw);

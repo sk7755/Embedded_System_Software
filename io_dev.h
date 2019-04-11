@@ -17,6 +17,8 @@
 #include <dirent.h>
 #include <linux/input.h>
 #include "main.h"
+#include <sys/select.h>
+#include <errno.h>
 //LED DEVICE
 #define FPGA_BASE_ADDRESS 0x08000000
 #define LED_ADDR 0x16
@@ -39,18 +41,27 @@ typedef enum{
 #define FPGA_DOT_DEVICE "/dev/fpga_dot"
 int dev_dot;
 
-//SWITCH DEVICE
+//DIP SWITCH DEVICE
 int dev_dip_switch;
 #define FPGA_DIP_SWITCH_DEVICE "/dev/fpga_dip_switch"
+
+//PUSH SWITCH DEVICE
+int dev_push_switch;
+#define FPGA_PUSH_SWITCH_DEVICE "/dev/fpga_push_switch"
+#define MAX_BUTTON 9
 
 //INPUT_EVENT DEVICE
 #define INPUT_EVENT_BUFF_SIZE 64
 #define KEY_RELEASE 0
 #define KEY_PRESS 1
 #define INPUT_EVENT_DEVICE "/dev/input/event0"
-#define END_PROGRAM 158
-#define MODE_UP 115
-#define MODE_DOWN 114
+
+typedef enum{
+	HOME_KEY = 102 ,BACK_KEY = 158, PROG_KEY = 116,
+	VOL_UP_KEY = 115, VOL_DOWN_KEY = 114
+}INPUT_EVENT_KEY;
+
+
 int dev_input_event;
 
 int init_dev();

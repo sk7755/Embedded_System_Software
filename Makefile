@@ -1,5 +1,12 @@
-CC = gcc
-CFLAGS =
+mode = 0
+
+ifeq ($(mode) ,1)
+	CC = arm-none-linux-gnueabi-gcc
+	CFLAGS = -static
+else
+	CC = gcc
+	CFLAGS = 
+endif
 TARGET = 20151607
 
 $(TARGET) : io_dev.o main.o mode_func.o

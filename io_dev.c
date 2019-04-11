@@ -39,7 +39,7 @@ int init_dev()
 	fd = open("/dev/mem", O_RDWR | O_SYNC);
 	if(fd < 0){
 		perror("/dev/mem open error");
-		exit(1);
+		return 0;
 	}
 
 	fpga_addr = (unsigned long *)mmap(NULL,4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, FPGA_BASE_ADDRESS);
@@ -47,7 +47,7 @@ int init_dev()
 	{
 		printf("LED : mmap error!\n");
 		close(fd);
-		exit(1);
+		return 0;
 	}
 	led_addr = (unsigned char*)((void*)fpga_addr + LED_ADDR);
 
@@ -55,14 +55,14 @@ int init_dev()
 	dev_fnd = open(FND_DEVICE, O_RDWR);
 	if(dev_fnd < 0){
 		printf("FND : Device open error : %s\n",FND_DEVICE);
-		exit(1);
+		return 0;
 	}
 
 	//TEXT_LCD DEVICE OPEN BY DRIVER
 	dev_text_lcd = open(FPGA_TEXT_LCD_DEVICE, O_WRONLY);
 	if(dev_text_lcd < 0){
 		printf("TEXT_LCD : Device open error : %s\n",FPGA_TEXT_LCD_DEVICE);
-		exit(1);
+		return 0;
 	}
 	output_text_lcd(0,TEXT_LCD_CLEAR);
 
@@ -70,23 +70,33 @@ int init_dev()
 	dev_dot = open(FPGA_DOT_DEVICE, O_WRONLY);
 	if(dev_dot < 0){
 		printf("DOT : Device open error : %s\n",FPGA_DOT_DEVICE);
-		exit(1);
+		return 0;
 	}
 
-	//SWITCH DEVICE OPEN BY DRIVER
+	//DIP SWITCH DEVICE OPEN BY DRIVER
 	dev_dip_switch = open(FPGA_DIP_SWITCH_DEVICE, O_RDWR);
 	
 	if (dev_dip_switch < 0){
 		printf("DIP_SWITCH : Device open error : %s\n",FPGA_DIP_SWITCH_DEVICE);
-		exit(1);
+		return 0;
 	}	
 
+	//PUSH SWITCH DEVICE OPEN BY DRIVER
+	dev_push_switch = open(FPGA_PUSH_SWITCH_DEVICE, O_RDWR);
+	if(dev_push_switch < 0){
+		printf("PUSH_SWITCH : Device open error : %s\n",FPGA_PUSH_SWITCH_DEVICE);
+		return 0;
+	}
+	//(void)signal(SIGINT,user_signal1);
+
 	//INPUT_EVENT DEVICE OPEN BY DRIVER
-	dev_input_event = open(INPUT_EVENT_DEVICE, O_RDONLY);
+	dev_input_event = open(INPUT_EVENT_DEVICE, O_RDWR | O_NONBLOCK);
 	
+	//int flags = fcntl(dev_input_event,F_GETFD);
+	//fcntl(dev_input_event,F_SETFD,flags | O_NONBLOCK);
 	if(dev_input_event < 0){
 		printf("INPUT_EVENT : Device open error : %s\n",INPUT_EVENT_DEVICE);
-		exit(1);
+		return 0;
 	}
 
 	return 1;
@@ -99,6 +109,7 @@ int close_dev()
 	close(dev_text_lcd);
 	close(dev_dot);
 	close(dev_dip_switch);
+	close(dev_push_switch);
 	close(dev_input_event);
 
 	return 1;
@@ -106,8 +117,9 @@ int close_dev()
 
 int output_led(int value)
 {
-	printf("output led - %x\n",value);
-	return 1;
+	if(PRINT_DEBUG)
+		printf("output led - %x\n",value);
+	//return 1;
 	if(value < 0 || value > 255)
 	{
 		printf("LED : Invalid range! -%d\n",value);
@@ -120,8 +132,9 @@ int output_led(int value)
 
 int output_fnd(int value)
 {
-	printf("output fnd - %d\n",value);
-	return 1;
+	if(PRINT_DEBUG)
+		printf("output fnd - %d\n",value);
+	//return 1;
 	if(value <0 || value >9999)
 	{
 		printf("FND : Invalid range! -%d\n",value);
@@ -150,7 +163,8 @@ int output_fnd(int value)
 
 int text_lcd_buff_mdf(char character,int pos, TEXT_LCD_OP op)
 {
-	printf("output text lcd mdf- %c %d %d\n",character, pos, op);
+	if(PRINT_DEBUG)
+		printf("output text lcd mdf- %c %d %d\n",character, pos, op);
 
 	int i;
 	switch(op){
@@ -178,8 +192,9 @@ int text_lcd_buff_mdf(char character,int pos, TEXT_LCD_OP op)
 
 int output_text_lcd()
 {
-	printf("output text lcd - %s\n",text_lcd_buff);
-	return 1;
+	if(PRINT_DEBUG)
+		printf("output text lcd - %s\n",text_lcd_buff);
+	//return 1;
 	write(dev_text_lcd, text_lcd_buff, TEXT_LCD_MAX_BUFF);
 
 	return 1;
@@ -187,8 +202,9 @@ int output_text_lcd()
 
 int output_dot(char character)
 {
-	printf("output dot -%c\n",character);
-	return 1;
+	if(PRINT_DEBUG)
+		printf("output dot -%c\n",character);
+	//return 1;
 	int str_size;
 
 	if(character == 0){
@@ -222,44 +238,66 @@ int input_process()
 	int queue_id = msgget(key,IPC_CREAT | 0666);
 
 	MsgType msg;
-
-	msg.mtype = 1;
-
-/*	
+	MsgType msg2;
+	unsigned char push_sw_buff[MAX_BUTTON];
 	int msg_size = sizeof(MsgType);
-	int i = 0;
-	while(1){
-		printf("I'm input_process\n");
-		sprintf(msg.mtext, "%d",i++);
+	int push_buff_size = sizeof(push_sw_buff);
+	int previous_sw_value = 0;
+	int i;
 
-		if(msgsnd(queue_id,(void *)&msg, msg_size, IPC_NOWAIT) < 0){
-			printf("Input Process : Message Send Fail!\n");
-			return 0;
-		}
-		else
-			printf("Input Process : Message Send %d!!\n",i-1);
 
-		usleep(1000000);
-	}
-
-	unsigned char dip_sw_buff = 0;
 	struct input_event ev[INPUT_EVENT_BUFF_SIZE];
-	int size = sizeof(struct input_event);
+	int input_event_size = sizeof(struct input_event);
 	int rd;
-
-	(void)signal(SIGINT, user_signal1);
-
-	while(!quit){
-		usleep(1000000);
-		if((rd = read(dev_input_event,ev,size * INPUT_EVENT_BUFF_SIZE)) < size){
-			printf("INPUT PROCESS : read()\n");
-			return 0;
+	int input_event_value;
+	
+	while(!quit){	
+		//PUSH_SWITCH input process
+		read(dev_push_switch,&push_sw_buff, push_buff_size);
+		
+		int push_sw_value = 0;
+		for(i =0;i<MAX_BUTTON;i++){
+			push_sw_value <<= 1;
+			push_sw_value += push_sw_buff[i];
 		}
-		//추가 하도록
-		read(dev_dip_switch, &dip_sw_buff, 1);
+		if(push_sw_value - previous_sw_value > 0){
+			msg.mtype = MSG_PUSH_SWITCH;
+			msg.mvalue = push_sw_value;
+			if(msgsnd(queue_id,(void *)&msg, msg_size, IPC_NOWAIT) < 0){
+				printf("Input Process : Message Send Fail!\n");
+				return 0;
+			}
+			else{
+				if(PRINT_DEBUG)
+					printf("Input Process : Message Send %d!!\n",push_sw_value);
+			}
+
+		}
+		previous_sw_value = push_sw_value;
+
+		//INPUT_EVENT input process
+
+		rd =read(dev_input_event,ev,input_event_size * INPUT_EVENT_BUFF_SIZE);
+
+		if(rd >= input_event_size){
+			input_event_value = ev[0].value;
+			if(input_event_value == KEY_PRESS){
+				msg.mtype = MSG_INPUT_EVENT;
+				msg.mvalue = (int)ev[0].code;
+				
+				if(msgsnd(queue_id,(void *)&msg, msg_size, IPC_NOWAIT) < 0){
+					printf("Input Process : Message Send Fail!\n");
+					return 0;
+				}
+				else{
+					if(PRINT_DEBUG)
+						printf("Input Process : Message Send %d!!\n",msg.mvalue);
+				}
+			}
+		}
+
 
 	}
-*/
 	return 1;
 }
 
@@ -275,14 +313,14 @@ int output_process()
 	int msg_size = sizeof(MsgType);
 
 	while(1){
-		printf("I'm output_process\n");
 		int nbytes = msgrcv(queue_id, (void*)&msg, msg_size, 0,0);
 		if(nbytes < 0){
 			printf("Output Process : Message recieve error!\n");
 			return 0;
 		}
 		else if(nbytes > 0){
-			printf("Output process Recieved!\n");
+			if(PRINT_DEBUG)
+				printf("Output process Recieved!\n");
 			switch(msg.mtype){
 				case MSG_LED :
 					output_led(msg.mvalue);
@@ -305,7 +343,6 @@ int output_process()
 				default :
 					;
 			}
-			printf("END!\n");
 		}
 		
 
