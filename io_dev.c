@@ -27,7 +27,7 @@ unsigned char fpga_set_blank[10] = {
 };
 unsigned char quit = 0;
 
-unsigned char text_lcd_buff[TEXT_LCD_MAX_BUFF];
+unsigned char text_lcd_buff[TEXT_LCD_MAX_BUFF + 1] = {0,};
 int text_lcd_i = 0;
 
 int init_dev()
@@ -106,6 +106,8 @@ int close_dev()
 
 int output_led(int value)
 {
+	printf("output led - %x\n",value);
+	return 1;
 	if(value < 0 || value > 255)
 	{
 		printf("LED : Invalid range! -%d\n",value);
@@ -118,6 +120,8 @@ int output_led(int value)
 
 int output_fnd(int value)
 {
+	printf("output fnd - %d\n",value);
+	return 1;
 	if(value <0 || value >9999)
 	{
 		printf("FND : Invalid range! -%d\n",value);
@@ -146,8 +150,9 @@ int output_fnd(int value)
 
 int text_lcd_buff_mdf(char character,int pos, TEXT_LCD_OP op)
 {
+	printf("output text lcd mdf- %c %d %d\n",character, pos, op);
+
 	int i;
-	
 	switch(op){
 		case TEXT_LCD_CLEAR :
 			for(i=0;i<TEXT_LCD_MAX_BUFF;i++)
@@ -173,6 +178,8 @@ int text_lcd_buff_mdf(char character,int pos, TEXT_LCD_OP op)
 
 int output_text_lcd()
 {
+	printf("output text lcd - %s\n",text_lcd_buff);
+	return 1;
 	write(dev_text_lcd, text_lcd_buff, TEXT_LCD_MAX_BUFF);
 
 	return 1;
@@ -180,8 +187,15 @@ int output_text_lcd()
 
 int output_dot(char character)
 {
+	printf("output dot -%c\n",character);
+	return 1;
 	int str_size;
-	if(character >= '0' && character <= '9'){
+
+	if(character == 0){
+		str_size = sizeof(fpga_set_blank);
+		write(dev_dot,fpga_set_blank,str_size);
+	}
+	else if(character >= '0' && character <= '9'){
 		str_size = sizeof(fpga_number[character -'0']);
 		write(dev_dot,fpga_number[character-'0'],str_size);
 	}
@@ -255,7 +269,9 @@ int output_process()
 	int queue_id = msgget(key,IPC_CREAT | 0666);
 
 	MsgType msg;
-	
+	char character;
+	int pos;
+	TEXT_LCD_OP op;
 	int msg_size = sizeof(MsgType);
 
 	while(1){
@@ -266,6 +282,7 @@ int output_process()
 			return 0;
 		}
 		else if(nbytes > 0){
+			printf("Output process Recieved!\n");
 			switch(msg.mtype){
 				case MSG_LED :
 					output_led(msg.mvalue);
@@ -276,15 +293,22 @@ int output_process()
 				case MSG_TEXT_LCD :
 					output_text_lcd();
 					break;
+				case MSG_TEXT_LCD_MDF :
+					character = (char)((msg.mvalue >> 16) & 0xFF);
+					pos = (msg.mvalue >> 8) & 0xFF;
+					op = msg.mvalue & 0xFF;
+					text_lcd_buff_mdf(character, pos, op);
+					break;
 				case MSG_DOT :
 					output_dot(msg.mvalue);
 					break;
 				default :
 					;
 			}
+			printf("END!\n");
 		}
+		
 
-		usleep(400000);
 	}
 
 

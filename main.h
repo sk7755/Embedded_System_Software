@@ -2,6 +2,7 @@
 #define __MAIN_H__
 
 #include "io_dev.h"
+#include "mode_func.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,7 +21,7 @@ typedef struct{
 
 typedef enum {
 	MSG_INPUT_EVENT, MSG_DIP_SWITCH,		//INPUT
-	MSG_LED, MSG_FND, MSG_TEXT_LCD, MSG_DOT	//OUTPUT
+	MSG_LED, MSG_FND, MSG_TEXT_LCD,MSG_TEXT_LCD_MDF, MSG_DOT	//OUTPUT
 }MSG_TYPE;
 
 typedef enum{

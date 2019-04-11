@@ -3,7 +3,7 @@
 static int current_mode = CLOCK;
 static int current_sw = 0;
 static int ip_queue_id;
-static int op_queue_id;
+int op_queue_id;
 static int msg_size;
 int main()
 {
@@ -26,13 +26,16 @@ int main()
 		output_process();
 		return 0;
 	}
-	
+
+	init_msg_queue();
 	while(TRUE){
 		msg_rcv_update();
 		
 		switch(current_mode){
 			case EXIT :
 			case CLOCK :
+				mode_clock(current_sw);
+				break;
 			case COUNTER :
 			case TEXT_EDITOR :
 			case DRAW_BOARD :
@@ -40,23 +43,7 @@ int main()
 				;
 		}
 	}
-/*
-	while(1){
-		printf("I'm main process\n");
-		int nbytes = msgrcv(ip_queue_id, (void*)&input_msg, msg_size, 1, 0);
-		if(nbytes > 0){
-			printf("Main process : recieve %s\n",input_msg.mtext);
-			if(msgsnd(op_queue_id,(void *)&input_msg, msg_size, IPC_NOWAIT) < 0){
-				printf("Main Process : Message Send Fail!\n");
-				return 0;
-			}
-			else
-				printf("Main Process : Message Send %s!!\n",input_msg.mtext);
 
-		}
-		usleep(1000000);
-	}
-	*/
 	//close_dev();
 	return 0;
 }
@@ -84,12 +71,8 @@ int msg_rcv_update()
 	current_sw = NONE;
 
 	MsgType msg;
-	int nbytes = msgrcv(ip_queue_id, (void*)&msg, msg_size, 0, 0);
-	if(nbytes < 0){
-		printf("Main Process : Message recieve error!\n");
-		return 0;
-	}
-	else if(nbytes > 0){
+	int nbytes = msgrcv(ip_queue_id, (void*)&msg, msg_size, 0, IPC_NOWAIT);
+	if(nbytes > 0){
 		switch(msg.mtype){
 			case MSG_INPUT_EVENT:
 				current_sw = msg.mvalue;
