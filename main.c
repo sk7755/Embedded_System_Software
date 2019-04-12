@@ -43,6 +43,8 @@ int main()
 				mode_clock(current_sw);
 				break;
 			case COUNTER :
+				mode_counter(current_sw);
+				break;
 			case TEXT_EDITOR :
 			case DRAW_BOARD :
 			default :

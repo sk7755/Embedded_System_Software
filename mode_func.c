@@ -35,6 +35,14 @@ int mode_clock(int sw)
 		output_msg_send(MSG_TEXT_LCD,0);
 		previous_sec = current_tm->tm_sec;
 		mode_init = 0;
+		if(PRINT_DEBUG){
+			printf("--------------CLOCK MODE--------------\n");
+			printf("SW1 : time change\n");
+			printf("SW2 : time reset to current system time\n");
+			printf("SW3 : Increase 1 hour in time change state\n");
+			printf("SW4 : Increase 1 minute in time change state\n");
+			printf("---------------------------------------\n");
+		}
 	}
 
 	
@@ -88,6 +96,81 @@ int mode_clock(int sw)
 	}
 	previous_sec = current_tm-> tm_sec;
 	return 1;
+}
+
+int mode_counter(int sw)
+{
+	static int count;
+	static int radix_type;
+	static int radix[RADIX_NUM] = {10,8,4,2};
+
+	if(mode_init){
+		count = 0;
+		radix_type = DECIMAL;
+		output_msg_send(MSG_FND,count);
+		output_msg_send(MSG_LED,0x080);
+		output_msg_send(MSG_DOT,0);
+		output_msg_send(MSG_TEXT_LCD_MDF,TEXT_LCD_CLEAR);
+		output_msg_send(MSG_TEXT_LCD,0);
+		mode_init = 0;
+		if(PRINT_DEBUG){
+			printf("-------------COUNTER MODE--------------\n");
+			printf("SW1 : radix change\n");
+			printf("SW2 : +100 in current radix system\n");
+			printf("SW3 : +10 in current radix system\n");
+			printf("SW4 : +1 in current radix system\n");
+			printf("---------------------------------------\n");
+		}
+	}
+	int send_flag = 0;
+	if(sw == 0x100){		//Switch 1 Radix change
+		radix_type = (radix_type + 1) % RADIX_NUM;
+		if(PRINT_DEBUG)
+			printf("Current radix : %d\n",radix[radix_type]);
+		send_flag = 1;
+	}
+	
+	if(sw == 0x080){		//Switch 2 Increase 100
+		count += radix[radix_type] * radix[radix_type];
+		send_flag = 1;
+	}
+	
+	if(sw == 0x040){		//Switch 3 Increase 10
+		count += radix[radix_type];
+		send_flag = 1;
+	}
+	
+	if(sw == 0x020){		//Switch 4 Increase 1
+		count++;
+		send_flag = 1;
+	}
+	
+	if(send_flag){
+		count %= radix[radix_type] * radix[radix_type] * radix[radix_type];
+		int value = radix_convert(count, radix[radix_type]);
+		output_msg_send(MSG_FND,value);
+	}
+	
+	return 1;
+}
+
+// Convert integer to integer whose string represented target radix 
+// Caution : converted value is integer type which may not real value.
+//			It is just integer value that switched from string to intger.
+// EXample : DECIMAL 10 -----> OCTAR 12 (In octal representation)
+//			radix_convert(10, 10, 8) return 12
+int radix_convert(int value,int radix)
+{
+	int ret = 0;
+	int exp = 1;
+
+	while(value){
+		ret = (ret + (value % radix) * exp)%1000;
+		value /= radix;
+		exp *=10;
+	}
+
+	return ret;
 }
 
 int output_msg_send(long mtype, int mvalue)

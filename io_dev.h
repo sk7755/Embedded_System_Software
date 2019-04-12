@@ -37,7 +37,11 @@ int dev_fnd;
 typedef enum{
 	TEXT_LCD_CLEAR, TEXT_LCD_LSHIFT, TEXT_LCD_EDIT
 }TEXT_LCD_OP;
-
+/*TEXT_LCD_MDF value format
+value - 32bit
+0 x 0 0 | 0 0 | 0 0 | 0 0 |
+		| ch  | pos | op  |
+*/
 //DOT DEVICE
 #define FPGA_DOT_DEVICE "/dev/fpga_dot"
 int dev_dot;
