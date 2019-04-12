@@ -1,4 +1,4 @@
-mode = 1
+mode = 0
 
 ifeq ($(mode) ,1)
 	CC = arm-none-linux-gnueabi-gcc
@@ -6,7 +6,7 @@ ifeq ($(mode) ,1)
 else
 	CC = gcc
 	CFLAGS = -Wall
-	LDFLAGS = -lncurses
+	LDFLAGS = 
 endif
 TARGET = 20151607
 

@@ -1,5 +1,6 @@
 #include "io_dev.h"
 
+#if IN_CSPRO
 //IN CSPRO KEYBOARD -> SWITCH
 int cspro_key_convert(char ch, MsgType *msg)
 {
@@ -54,6 +55,22 @@ int cspro_key_convert(char ch, MsgType *msg)
 	return 0;
 
 }
+
+int getch(void)
+{
+	struct termios oldt, newt;
+	int ch;
+
+	tcgetattr(STDIN_FILENO, &oldt);
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+	ch = getchar();
+	tcsetattr(STDIN_FILENO,TCSANOW,&oldt);
+	return ch;	
+}
+
+#endif
 
 unsigned char fpga_number[10][10] = {
 	{0x3e,0x7f,0x63,0x73,0x73,0x6f,0x67,0x63,0x7f,0x3e}, // 0
@@ -277,9 +294,8 @@ int output_dot(int value)
 		return 1;
 
 	if(op == DOT_CLEAR){
-		printf("SIZE SIBAL : %d\n",sizeof(fpga_set_blank));
 		memcpy(dot_buff,fpga_set_blank,DOT_MAX_BUFF);
-		write(dev_dot,fpga_set_blank,DOT_MAX_BUFF);
+		write(dev_dot,dot_buff,DOT_MAX_BUFF);
 	}
 	if(op == DOT_1){
 		memcpy(dot_buff,fpga_number[1],DOT_MAX_BUFF);
@@ -338,26 +354,13 @@ int input_process()
 	int input_event_size = sizeof(struct input_event);
 	int rd;
 	int input_event_value;
-	
-	//IN_CSPRO---------------------------------------
-
-	struct termios oldt, newt;
 	char ch;
-	int oldf;
 
-	if(IN_CSPRO){
-		tcgetattr(STDIN_FILENO, &oldt);
-		newt = oldt;
-		newt.c_lflag &= ~(ICANON | ECHO);
-		tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-		oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-		fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-	}
-	//------------------------------------------------
-	while(!quit){	
+	(void)signal(SIGINT,user_signal1);
+
+	while(!quit){
 		if(IN_CSPRO){
-			ch = getchar();
-
+			ch = getch();
 			if(cspro_key_convert(ch, &msg)){
 				if(msgsnd(queue_id,(void *)&msg, msg_size, IPC_NOWAIT) < 0){
 					printf("Input Process : Message Send Fail!\n");
@@ -430,14 +433,10 @@ int output_process()
 	int pos;
 	TEXT_LCD_OP op;
 	int msg_size = sizeof(MsgType);
-
-	while(1){
+	(void)signal(SIGINT,user_signal1);
+	while(!quit){
 		int nbytes = msgrcv(queue_id, (void*)&msg, msg_size, 0,0);
-		if(nbytes < 0){
-			printf("Output Process : Message recieve error!\n");
-			return 0;
-		}
-		else if(nbytes > 0){
+		if(nbytes > 0){
 			if(PRINT_DEBUG)
 				printf("Output process Recieved!\n");
 			switch(msg.mtype){
@@ -466,7 +465,7 @@ int output_process()
 		
 
 	}
-
+	return 1;
 
 }
 

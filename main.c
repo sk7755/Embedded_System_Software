@@ -8,28 +8,34 @@ static int msg_size;
 int main()
 {
 	init_dev();
-	int pid = fork();
-	if(pid < 0){
+	int input_pid = fork();
+	int output_pid;
+	if(input_pid < 0){
 		printf("fail to fork process1\n");
 		exit(1);
 	}
-	else if (pid == 0){
+	else if (input_pid == 0){
 		input_process();
 		close_dev();
+		if(PRINT_DEBUG)
+			printf("Input process Exit!!\n");
 		return 0;
 	}
 	else
-		pid = fork();
+		output_pid = fork();
 
-	if (pid < 0)
+	if (output_pid < 0)
 		printf("fail to fork process2\n");
-	else if( pid == 0){
+	else if( output_pid == 0){
 		output_process();
 		close_dev();
+		if(PRINT_DEBUG)
+			printf("Output process Exit!!\n");
 		return 0;
 	}
 
 	mode_init = 1;
+	int status;
 	init_msg_queue();
 	while(TRUE){
 		msg_rcv_update();
@@ -37,6 +43,14 @@ int main()
 		switch(current_mode){
 			case EXIT :
 				close_dev();
+				kill(input_pid, SIGINT);
+				kill(output_pid,SIGINT);
+				waitpid(input_pid, &status,0);
+				waitpid(output_pid, &status,0);
+				close_msg_queue();
+				if(PRINT_DEBUG)
+					printf("Main process Exit!!\n");
+				return 0;
 				//Input process Output process Main process all exit!
 				break;
 			case CLOCK :

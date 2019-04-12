@@ -9,12 +9,13 @@
 #include <sys/ipc.h>
 #include <sys/types.h>
 #include <sys/msg.h>
+#include <sys/wait.h>
 
 #define INPUT_KEY 0x1234
 #define OUTPUT_KEY 0x5678
 #define TRUE 1
 #define FALSE 0
-#define IN_CSPRO 0
+#define IN_CSPRO 1
 #define PRINT_DEBUG 1
 typedef struct MsgType{
 	long mtype;
