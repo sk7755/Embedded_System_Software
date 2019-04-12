@@ -17,8 +17,9 @@
 #include <dirent.h>
 #include <linux/input.h>
 #include "main.h"
-#include <sys/select.h>
-#include <errno.h>
+
+//IN_CSPRO
+#include <ncurses.h>
 //LED DEVICE
 #define FPGA_BASE_ADDRESS 0x08000000
 #define LED_ADDR 0x16

@@ -5,12 +5,13 @@ ifeq ($(mode) ,1)
 	CFLAGS = -static
 else
 	CC = gcc
-	CFLAGS = 
+	CFLAGS =
+	LDFLAGS = -lncurses
 endif
 TARGET = 20151607
 
 $(TARGET) : io_dev.o main.o mode_func.o
-	$(CC) $(CFLAGS) -o $(TARGET) io_dev.o main.o mode_func.o
+	$(CC) $(CFLAGS) -o $(TARGET) io_dev.o main.o mode_func.o $(LDFLAGS)
 
 io_dev.o : io_dev.c io_dev.h main.h
 	$(CC) $(CFLAGS) -c -o io_dev.o io_dev.c

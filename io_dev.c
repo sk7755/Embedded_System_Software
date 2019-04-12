@@ -255,7 +255,34 @@ int input_process()
 	int rd;
 	int input_event_value;
 	
+	//IN_CSPRO---------------------------------------
+
+	
+	struct termios oldt, newt;
+  	char ch, command[20];
+	int kbd_value;
+    int oldf;
+	
+	if(IN_CSPRO){
+		tcgetattr(STDIN_FILENO, &oldt);
+		newt = oldt;
+		newt.c_lflag &= ~(ICANON | ECHO);
+		tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+		oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+		fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+	}
+	//------------------------------------------------
 	while(!quit){	
+		if(IN_CSPRO){
+			ch = getchar();
+			if('1' <= ch && ch <= '9'){
+				msg.mvalue= 0x200 >> (ch - '0');
+				printf("value = %d\n",msg.mvalue);
+				msg.mtype = MSG_PUSH_SWITCH;
+				msgsnd(queue_id,(void*)&msg,msg_size, IPC_NOWAIT);
+			}
+			continue;
+		}
 		//PUSH_SWITCH input process
 		read(dev_push_switch,&push_sw_buff, push_buff_size);
 		
@@ -354,3 +381,6 @@ int output_process()
 
 
 }
+
+//IN CSPRO KEYBOARD -> SWITCH
+
