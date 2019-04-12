@@ -48,6 +48,7 @@ int main()
 			default :
 				;
 		}
+		usleep(10000);
 	}
 
 	close_dev();
@@ -77,7 +78,10 @@ int msg_rcv_update()
 	current_sw = 0;
 	MsgType msg;
 	int nbytes = msgrcv(ip_queue_id, (void*)&msg, msg_size, 0, IPC_NOWAIT);
+
 	if(nbytes > 0){
+		if(PRINT_DEBUG)
+			printf("Main process : message recieved ! - %ld %d\n",msg.mtype, msg.mvalue);
 		switch(msg.mtype){
 			case MSG_PUSH_SWITCH:
 				current_sw = msg.mvalue;
@@ -99,7 +103,8 @@ int msg_rcv_update()
 						;
 				}
 				if(PRINT_DEBUG)
-					printf("CURRENT MODE : %d\n",current_mode);
+					printf("Main process :current mode - %d\n",current_mode);
+
 				break;
 			default:
 				;

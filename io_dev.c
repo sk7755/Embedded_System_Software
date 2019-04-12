@@ -323,6 +323,7 @@ int input_process()
 						printf("Input Process : Message Send %d!!\n",msg.mvalue);
 				}
 			}
+			usleep(10000);
 			continue;
 		}
 		//PUSH_SWITCH input process
