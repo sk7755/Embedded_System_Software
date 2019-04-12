@@ -5,7 +5,7 @@ ifeq ($(mode) ,1)
 	CFLAGS = -static
 else
 	CC = gcc
-	CFLAGS =
+	CFLAGS = -Wall
 	LDFLAGS = -lncurses
 endif
 TARGET = 20151607

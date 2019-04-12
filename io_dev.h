@@ -44,6 +44,12 @@ value - 32bit
 */
 //DOT DEVICE
 #define FPGA_DOT_DEVICE "/dev/fpga_dot"
+#define DOT_WIDTH 7
+#define DOT_HEIGHT 10
+#define DOT_MAX_BUFF 10
+typedef enum{
+	DOT_CLEAR, DOT_REVERSE, DOT_1, DOT_A, DOT_BUFF_PRINT, DOT_BLINK
+}DOT_OP;
 int dev_dot;
 
 //DIP SWITCH DEVICE
@@ -74,7 +80,7 @@ int output_led(int value);
 int output_fnd(int value);
 int text_lcd_buff_mdf(char character, int pos, TEXT_LCD_OP op);
 int output_text_lcd();
-int output_dot(char character);
+int output_dot(int value);
 void user_signal1(int sig);
 int input_process();
 int output_process();

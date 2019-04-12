@@ -19,10 +19,15 @@ typedef enum{
 	DECIMAL, OCATAL, QUATER, BINARY
 }RADIX_TYPE;
 
+typedef enum{
+	CHAR_MODE,INT_MODE 
+}EDITOR_INPUT_MODE;
+#define CHAR_MODE_NUM 3	//한 칸에 모여 있는 char 개수
+
 int output_msg_send(long mtype, int mvalue);
 int radix_convert(int value, int radix);
 int mode_clock(int sw);
 int mode_counter(int sw);
-int mode_text_editor();
-int mode_draw_board();
+int mode_text_editor(int sw);
+int mode_draw_board(int sw);
 #endif

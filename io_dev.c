@@ -8,6 +8,23 @@ int cspro_key_convert(char ch, MsgType *msg)
 		msg->mtype = MSG_PUSH_SWITCH;
 		return 1;
 	}
+	if(ch == 'a'){
+		msg->mvalue = 0x0C0;
+		msg->mtype = MSG_PUSH_SWITCH;
+		return 1;
+	}
+	if(ch == 's'){
+		msg->mvalue = 0x018;
+		msg->mtype = MSG_PUSH_SWITCH;
+		return 1;
+	}
+	if(ch == 'd'){
+		msg->mvalue = 0x003;
+		msg->mtype = MSG_PUSH_SWITCH;
+		return 1;
+	}
+
+
 	if(ch == 'q'){
 		msg->mvalue = HOME_KEY;
 		msg->mtype = MSG_INPUT_EVENT;
@@ -33,6 +50,7 @@ int cspro_key_convert(char ch, MsgType *msg)
 		msg->mtype = MSG_INPUT_EVENT;
 		return 1;
 	}
+
 	return 0;
 
 }
@@ -62,6 +80,8 @@ unsigned char fpga_set_blank[10] = {
 	// memset(array,0x00,sizeof(array));
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
+unsigned char dot_buff[10] = {0,};
+
 unsigned char quit = 0;
 
 unsigned char text_lcd_buff[TEXT_LCD_MAX_BUFF + 1] = {0,};
@@ -240,29 +260,48 @@ int output_text_lcd()
 	return 1;
 }
 
-int output_dot(char character)
+int output_dot(int value)
 {
+	DOT_OP op = value & 0xFF;
+	value >>= 8;
+	int y = value & 0xFF;
+	value >>= 8;
+	int x = value & 0xFF;
+	int arr_idx = (x * DOT_WIDTH + y)/DOT_WIDTH;
+	int bit_idx = (x * DOT_WIDTH + y)%DOT_WIDTH;
+
 	if(PRINT_DEBUG)
-		printf("output dot -%c\n",character);
+		printf("output dot - op : %d  x : %d  y : %d\n",op,x,y);
 	if(IN_CSPRO)
 		return 1;
-	int str_size;
 
-	if(character == 0){
-		str_size = sizeof(fpga_set_blank);
-		write(dev_dot,fpga_set_blank,str_size);
+	if(DOT_CLEAR){
+		memcpy(dot_buff,fpga_set_blank,DOT_MAX_BUFF);
+		write(dev_dot,dot_buff,DOT_MAX_BUFF);
 	}
-	else if(character >= '0' && character <= '9'){
-		str_size = sizeof(fpga_number[character -'0']);
-		write(dev_dot,fpga_number[character-'0'],str_size);
+	if(DOT_1){
+		memcpy(dot_buff,fpga_number[1],DOT_MAX_BUFF);
+		write(dev_dot,dot_buff,DOT_MAX_BUFF);
 	}
-	else if(character == 'A'){
-		str_size = sizeof(fpga_number[character -'A']);
-		write(dev_dot,fpga_number[character-'A'],str_size);
+	if(DOT_A){
+		memcpy(dot_buff,fpga_A,DOT_MAX_BUFF);
+		write(dev_dot,dot_buff,DOT_MAX_BUFF);
 	}
-	else{
-		printf("DOT : Invalid Character (0~9 | A) ! -%c\n",character);
-		return 0;
+	if(DOT_REVERSE){
+		dot_buff[arr_idx] ^= 0x40 >> bit_idx;
+		write(dev_dot,dot_buff,DOT_MAX_BUFF);
+	}
+	if(DOT_BUFF_PRINT)
+		wrtie(dev_dot, dot_buff,DOT_MAX_BUFF);
+
+	static int blink = 0;
+	if(DOT_BLINK){
+		if(blink){
+			dot_buff[arr_idx] ^= 0x40 >> bit_idx;
+			write(dev_dot,dot_buff,DOT_MAX_BUFF);
+			dot_buff[arr_idx] ^= 0x40 >> bit_idx;
+		}
+		blink = 1 - blink;
 	}
 
 	return 1;
@@ -279,7 +318,6 @@ int input_process()
 	int queue_id = msgget(key,IPC_CREAT | 0666);
 
 	MsgType msg;
-	MsgType msg2;
 	unsigned char push_sw_buff[MAX_BUTTON];
 	int msg_size = sizeof(MsgType);
 	int push_buff_size = sizeof(push_sw_buff);
@@ -294,12 +332,10 @@ int input_process()
 	
 	//IN_CSPRO---------------------------------------
 
-	
 	struct termios oldt, newt;
-  	char ch, command[20];
-	int kbd_value;
-    int oldf;
-	
+	char ch;
+	int oldf;
+
 	if(IN_CSPRO){
 		tcgetattr(STDIN_FILENO, &oldt);
 		newt = oldt;
