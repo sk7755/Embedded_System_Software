@@ -276,32 +276,33 @@ int output_dot(int value)
 	if(IN_CSPRO)
 		return 1;
 
-	if(DOT_CLEAR){
+	if(op == DOT_CLEAR){
+		printf("SIZE SIBAL : %d\n",sizeof(fpga_set_blank));
 		memcpy(dot_buff,fpga_set_blank,DOT_MAX_BUFF);
-		write(dev_dot,dot_buff,DOT_MAX_BUFF);
+		write(dev_dot,fpga_set_blank,DOT_MAX_BUFF);
 	}
-	if(DOT_1){
+	if(op == DOT_1){
 		memcpy(dot_buff,fpga_number[1],DOT_MAX_BUFF);
 		write(dev_dot,dot_buff,DOT_MAX_BUFF);
 	}
-	if(DOT_A){
+	if(op == DOT_A){
 		memcpy(dot_buff,fpga_A,DOT_MAX_BUFF);
 		write(dev_dot,dot_buff,DOT_MAX_BUFF);
 	}
-	if(DOT_FILL){
+	if(op == DOT_FILL){
 		dot_buff[arr_idx] |= 0x40 >> bit_idx;
 		write(dev_dot, dot_buff, DOT_MAX_BUFF);
 	}
-	if(DOT_REVERSE){
+	if(op == DOT_REVERSE){
 		for(i = 0;i<DOT_MAX_BUFF;i++)
 			dot_buff[i] ^= 0x7F;
 		write(dev_dot,dot_buff,DOT_MAX_BUFF);
 	}
-	if(DOT_PRINT)
+	if(op == DOT_PRINT)
 		write(dev_dot, dot_buff,DOT_MAX_BUFF);
 
 	static int blink = 0;
-	if(DOT_BLINK){
+	if(op ==DOT_BLINK){
 		if(blink){
 			dot_buff[arr_idx] ^= 0x40 >> bit_idx;
 			write(dev_dot,dot_buff,DOT_MAX_BUFF);

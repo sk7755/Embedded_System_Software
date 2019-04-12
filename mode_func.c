@@ -220,10 +220,7 @@ int mode_text_editor(int sw)
 
 	int value = 0;
 	if(1 <= press_sw && press_sw < 10){		//1 pressed button
-		if(text_len == TEXT_LCD_MAX_BUFF){	//text lcd is full
-			output_msg_send(MSG_TEXT_LCD_MDF,TEXT_LCD_LSHIFT);
-			text_len--;
-		}
+		
 		if(input_mode == CHAR_MODE){	//character mode
 			if(prev_sw == sw){	//character change
 				value = text_editor_pad[press_sw][pad_cur] << 16;
@@ -233,6 +230,10 @@ int mode_text_editor(int sw)
 				pad_cur = (pad_cur + 1) % CHAR_MODE_NUM;
 			}
 			else{
+				if(text_len == TEXT_LCD_MAX_BUFF){	//text lcd is full
+					output_msg_send(MSG_TEXT_LCD_MDF,TEXT_LCD_LSHIFT);
+					text_len--;
+				}
 				pad_cur = 0;
 				value = text_editor_pad[press_sw][pad_cur] << 16;
 				value += text_len << 8;
@@ -243,6 +244,10 @@ int mode_text_editor(int sw)
 			}
 		}
 		if(input_mode == INT_MODE){
+			if(text_len == TEXT_LCD_MAX_BUFF){	//text lcd is full
+				output_msg_send(MSG_TEXT_LCD_MDF,TEXT_LCD_LSHIFT);
+				text_len--;
+			}
 			value = (press_sw + '0') << 16;
 			value += text_len << 8;
 			value += TEXT_LCD_EDIT;
@@ -275,6 +280,7 @@ int mode_text_editor(int sw)
 	}
 
 	if(press_sw >0){
+		count %= 10000;
 		output_msg_send(MSG_TEXT_LCD,0);
 		output_msg_send(MSG_FND,count);
 		prev_sw =sw;
@@ -333,6 +339,7 @@ int mode_draw_board(int sw)
 	}
 	if(sw == 0x040){	//sw 3
 		cursor_blink = 1 - cursor_blink;
+		output_msg_send(MSG_DOT,DOT_PRINT);
 		count++;
 	}
 	if(sw == 0x020){	//sw 4
@@ -361,6 +368,11 @@ int mode_draw_board(int sw)
 	if(sw == 0x001){
 		output_msg_send(MSG_DOT,DOT_REVERSE);
 		count++;
+	}
+
+	if(sw){
+		count %= 10000;
+		output_msg_send(MSG_FND,count);
 	}
 	previous_sec = current_tm-> tm_sec;
 

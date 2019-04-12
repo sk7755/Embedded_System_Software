@@ -14,7 +14,7 @@
 #define OUTPUT_KEY 0x5678
 #define TRUE 1
 #define FALSE 0
-#define IN_CSPRO 1
+#define IN_CSPRO 0
 #define PRINT_DEBUG 1
 typedef struct MsgType{
 	long mtype;

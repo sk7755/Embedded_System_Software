@@ -19,7 +19,9 @@
 #include "main.h"
 
 //IN_CSPRO
-#include <ncurses.h>
+#if IN_CSPRO
+	#include <ncurses.h>
+#endif
 //LED DEVICE
 #define FPGA_BASE_ADDRESS 0x08000000
 #define LED_ADDR 0x16
