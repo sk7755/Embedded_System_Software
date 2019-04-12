@@ -1,5 +1,42 @@
 #include "io_dev.h"
 
+//IN CSPRO KEYBOARD -> SWITCH
+int cspro_key_convert(char ch, MsgType *msg)
+{
+	if('1' <= ch && ch <= '9'){
+		msg->mvalue = 0x200 >> (ch - '0');
+		msg->mtype = MSG_PUSH_SWITCH;
+		return 1;
+	}
+	if(ch == 'q'){
+		msg->mvalue = HOME_KEY;
+		msg->mtype = MSG_INPUT_EVENT;
+		return 1;
+	}
+	if(ch == 'w'){
+		msg->mvalue = BACK_KEY;
+		msg->mtype = MSG_INPUT_EVENT;
+		return 1;
+	}
+	if(ch == 'e'){
+		msg->mvalue = PROG_KEY;
+		msg->mtype = MSG_INPUT_EVENT;
+		return 1;
+	}
+	if(ch == 'r'){
+		msg->mvalue = VOL_UP_KEY;
+		msg->mtype = MSG_INPUT_EVENT;
+		return 1;
+	}
+	if(ch == 't'){
+		msg->mvalue = VOL_DOWN_KEY;
+		msg->mtype = MSG_INPUT_EVENT;
+		return 1;
+	}
+	return 0;
+
+}
+
 unsigned char fpga_number[10][10] = {
 	{0x3e,0x7f,0x63,0x73,0x73,0x6f,0x67,0x63,0x7f,0x3e}, // 0
 	{0x0c,0x1c,0x1c,0x0c,0x0c,0x0c,0x0c,0x0c,0x0c,0x1e}, // 1
@@ -275,11 +312,16 @@ int input_process()
 	while(!quit){	
 		if(IN_CSPRO){
 			ch = getchar();
-			if('1' <= ch && ch <= '9'){
-				msg.mvalue= 0x200 >> (ch - '0');
-				printf("value = %d\n",msg.mvalue);
-				msg.mtype = MSG_PUSH_SWITCH;
-				msgsnd(queue_id,(void*)&msg,msg_size, IPC_NOWAIT);
+
+			if(cspro_key_convert(ch, &msg)){
+				if(msgsnd(queue_id,(void *)&msg, msg_size, IPC_NOWAIT) < 0){
+					printf("Input Process : Message Send Fail!\n");
+					return 0;
+				}	
+				else{
+					if(PRINT_DEBUG)
+						printf("Input Process : Message Send %d!!\n",msg.mvalue);
+				}
 			}
 			continue;
 		}
@@ -382,5 +424,4 @@ int output_process()
 
 }
 
-//IN CSPRO KEYBOARD -> SWITCH
 

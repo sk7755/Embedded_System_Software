@@ -38,7 +38,7 @@ int main()
 			case EXIT :
 				close_dev();
 				//Input process Output process Main process all exit!
-				return 0;
+				break;
 			case CLOCK :
 				mode_clock(current_sw);
 				break;
@@ -83,7 +83,6 @@ int msg_rcv_update()
 				current_sw = msg.mvalue;
 				break;
 			case MSG_INPUT_EVENT:
-				
 				switch(msg.mvalue){
 					case BACK_KEY:
 						current_mode = EXIT;

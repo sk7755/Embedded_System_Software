@@ -76,4 +76,5 @@ int input_process();
 int output_process();
 int close_dev();
 
+
 #endif

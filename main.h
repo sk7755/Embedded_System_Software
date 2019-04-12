@@ -16,7 +16,7 @@
 #define FALSE 0
 #define IN_CSPRO 1
 #define PRINT_DEBUG 1
-typedef struct{
+typedef struct MsgType{
 	long mtype;
 	int mvalue;
 }MsgType;
