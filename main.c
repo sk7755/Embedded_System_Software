@@ -49,6 +49,8 @@ int main()
 				mode_text_editor(current_sw);
 				break;
 			case DRAW_BOARD :
+				mode_draw_board(current_sw);
+				break;
 			default :
 				;
 		}

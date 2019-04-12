@@ -267,6 +267,7 @@ int output_dot(int value)
 	int y = value & 0xFF;
 	value >>= 8;
 	int x = value & 0xFF;
+	int i;
 	int arr_idx = (x * DOT_WIDTH + y)/DOT_WIDTH;
 	int bit_idx = (x * DOT_WIDTH + y)%DOT_WIDTH;
 
@@ -287,12 +288,17 @@ int output_dot(int value)
 		memcpy(dot_buff,fpga_A,DOT_MAX_BUFF);
 		write(dev_dot,dot_buff,DOT_MAX_BUFF);
 	}
+	if(DOT_FILL){
+		dot_buff[arr_idx] |= 0x40 >> bit_idx;
+		write(dev_dot, dot_buff, DOT_MAX_BUFF);
+	}
 	if(DOT_REVERSE){
-		dot_buff[arr_idx] ^= 0x40 >> bit_idx;
+		for(i = 0;i<DOT_MAX_BUFF;i++)
+			dot_buff[i] ^= 0x7F;
 		write(dev_dot,dot_buff,DOT_MAX_BUFF);
 	}
-	if(DOT_BUFF_PRINT)
-		wrtie(dev_dot, dot_buff,DOT_MAX_BUFF);
+	if(DOT_PRINT)
+		write(dev_dot, dot_buff,DOT_MAX_BUFF);
 
 	static int blink = 0;
 	if(DOT_BLINK){
@@ -301,6 +307,8 @@ int output_dot(int value)
 			write(dev_dot,dot_buff,DOT_MAX_BUFF);
 			dot_buff[arr_idx] ^= 0x40 >> bit_idx;
 		}
+		else
+			write(dev_dot,dot_buff,DOT_MAX_BUFF);
 		blink = 1 - blink;
 	}
 

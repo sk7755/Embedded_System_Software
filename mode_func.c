@@ -288,7 +288,6 @@ int mode_draw_board(int sw)
 	static int x,y;
 	static int count;
 	static int cursor_blink;
-	static int cursor_light;
 	static int previous_sec;
 	time_t current_time;
 	time(&current_time);
@@ -299,22 +298,70 @@ int mode_draw_board(int sw)
 		x = 0 ,y = 0;
 		count = 0;
 		cursor_blink = 1;
-		cursor_light = 1;
 		output_msg_send(MSG_FND, 0);
 		output_msg_send(MSG_DOT,DOT_CLEAR);
 		output_msg_send(MSG_LED,0);
 		output_msg_send(MSG_TEXT_LCD_MDF,TEXT_LCD_CLEAR);
 		output_msg_send(MSG_TEXT_LCD,0);
 		previous_sec = current_tm->tm_sec;
+
+		if(PRINT_DEBUG){
+			printf("-----------DRAW BOARD MODE-------------\n");
+			printf("SW2 4 6 8 : direction key\n");
+			printf("SW1 : Init mode\n");
+			printf("SW3 : Cursor blonk\n");
+			printf("SW5 : Fill the dot at cursor\n");
+			printf("SW7 : Clear the board\n");
+			printf("SW9 : Reverse the board\n");
+			printf("---------------------------------------\n");
+		}
 		mode_init = 0;
 	}
 	
 	int diff_sec = current_tm->tm_sec - previous_sec;
-	if(diff_sec != 0){
-output_msg_
-	}
+	if(cursor_blink && diff_sec != 0)
+		output_msg_send(MSG_DOT,(x<<16) + (y<<8) + DOT_BLINK);
 
-	
+	if(sw == 0x100){	//sw 1
+		mode_init = 1;
+		count++;
+	}
+	if(sw == 0x080){	//sw 2
+		if(x > 0)
+			x--;
+		count++;
+	}
+	if(sw == 0x040){	//sw 3
+		cursor_blink = 1 - cursor_blink;
+		count++;
+	}
+	if(sw == 0x020){	//sw 4
+		if(y > 0)
+			y--;
+		count++;
+	}
+	if(sw == 0x010){	//sw 5
+		output_msg_send(MSG_DOT,(x<<16) + (y<<8) +DOT_FILL);
+		count++;
+	}
+	if(sw == 0x008){	//sw 6
+		if(y < DOT_WIDTH - 1)
+			y++;
+		count++;
+	}
+	if(sw == 0x004){	//sw 7
+		output_msg_send(MSG_DOT,DOT_CLEAR);
+		count++;
+	}
+	if(sw == 0x002){	//sw 8
+		if(x < DOT_HEIGHT - 1)
+			x++;
+		count++;
+	}
+	if(sw == 0x001){
+		output_msg_send(MSG_DOT,DOT_REVERSE);
+		count++;
+	}
 	previous_sec = current_tm-> tm_sec;
 
 	return 1;
