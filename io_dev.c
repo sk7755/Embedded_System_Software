@@ -371,7 +371,7 @@ int input_process()
 						printf("Input Process : Message Send %d!!\n",msg.mvalue);
 				}
 			}
-			usleep(10000);
+			usleep(100000);
 			continue;
 		}
 		//PUSH_SWITCH input process
@@ -382,7 +382,7 @@ int input_process()
 			push_sw_value <<= 1;
 			push_sw_value += push_sw_buff[i];
 		}
-		if(push_sw_value - previous_sw_value > 0){
+		if(previous_sw_value > 0 && push_sw_value == 0){
 			msg.mtype = MSG_PUSH_SWITCH;
 			msg.mvalue = push_sw_value;
 			if(msgsnd(queue_id,(void *)&msg, msg_size, IPC_NOWAIT) < 0){
@@ -393,9 +393,9 @@ int input_process()
 				if(PRINT_DEBUG)
 					printf("Input Process : Message Send %d!!\n",push_sw_value);
 			}
-
+			previous_sw_value = 0;
 		}
-		previous_sw_value = push_sw_value;
+		previous_sw_value = previous_sw_value< push_sw_value ? push_sw_value : previous_sw_value;
 
 		//INPUT_EVENT input process
 
@@ -417,7 +417,7 @@ int input_process()
 				}
 			}
 		}
-
+		usleep(100000);
 
 	}
 	return 1;
