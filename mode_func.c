@@ -75,14 +75,16 @@ int mode_clock(int sw)
 	int diff_min = 0;
 	if(diff_sec < 0)
 		diff_sec += 60;
-	
-	sec += diff_sec;
-	diff_min = sec/60;
-	min += diff_min;
-	sec %= 60;
-	hour += min / 60;
-	min %= 60;
-	hour %= 24;
+
+	if(!time_change){
+		sec += diff_sec;
+		diff_min = sec/60;
+		min += diff_min;
+		sec %= 60;
+		hour += min / 60;
+		min %= 60;
+		hour %= 24;
+	}
 	
 	
 	if(time_change && diff_sec > 0){
