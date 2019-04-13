@@ -371,7 +371,7 @@ int input_process()
 						printf("Input Process : Message Send %d!!\n",msg.mvalue);
 				}
 			}
-			usleep(100000);
+			usleep(40000);
 			continue;
 		}
 		//PUSH_SWITCH input process
@@ -384,7 +384,7 @@ int input_process()
 		}
 		if(previous_sw_value > 0 && push_sw_value == 0){
 			msg.mtype = MSG_PUSH_SWITCH;
-			msg.mvalue = push_sw_value;
+			msg.mvalue = previous_sw_value;
 			if(msgsnd(queue_id,(void *)&msg, msg_size, IPC_NOWAIT) < 0){
 				printf("Input Process : Message Send Fail!\n");
 				return 0;
@@ -417,7 +417,7 @@ int input_process()
 				}
 			}
 		}
-		usleep(100000);
+		usleep(40000);
 
 	}
 	return 1;

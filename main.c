@@ -68,7 +68,7 @@ int main()
 			default :
 				;
 		}
-		usleep(100000);
+		usleep(40000);
 	}
 
 	close_dev();

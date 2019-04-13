@@ -102,13 +102,13 @@ int mode_counter(int sw)
 {
 	static int count;
 	static int radix_type;
-	static int radix[RADIX_NUM] = {10,8,4,2};
+	static int radix[RADIX_NUM] = {2,10,8,4};
 
 	if(mode_init){
 		count = 0;
 		radix_type = DECIMAL;
 		output_msg_send(MSG_FND,count);
-		output_msg_send(MSG_LED,0x080);
+		output_msg_send(MSG_LED,0x040);
 		output_msg_send(MSG_DOT,DOT_CLEAR);
 		output_msg_send(MSG_TEXT_LCD_MDF,TEXT_LCD_CLEAR);
 		output_msg_send(MSG_TEXT_LCD,0);
@@ -274,8 +274,7 @@ int mode_text_editor(int sw)
 			output_msg_send(MSG_TEXT_LCD_MDF,TEXT_LCD_LSHIFT);
 			text_len--;
 		}
-		else
-			text_len++;
+		text_len++;
 		count++;
 	}
 

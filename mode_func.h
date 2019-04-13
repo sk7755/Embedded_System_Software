@@ -16,7 +16,7 @@ int mode_init;
 
 #define RADIX_NUM 4
 typedef enum{
-	DECIMAL, OCATAL, QUATER, BINARY
+	BINARY,DECIMAL,OCATAL, QUATER
 }RADIX_TYPE;
 
 typedef enum{
