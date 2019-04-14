@@ -387,6 +387,8 @@ int mode_snake_game(int sw)
 	static POINT head, tail;
 	static POINT dir;
 	static int start;
+	static int score;
+	static int led_value;
 	int i,j;
 	if(mode_init){
 		for(i = 0; i<10;i++){
@@ -394,6 +396,10 @@ int mode_snake_game(int sw)
 				map[i][j] = (MAP_NODE){EMPTY,(POINT){0,0}};
 			}
 		}
+		draw_map(map);
+		output_msg_send(MSG_FND, 0);
+		output_msg_send(MSG_LED, 0);
+		output_msg_send(MSG_TEXT_LCD_MDF,TEXT_LCD_CLEAR);
 		map[0][0] = (MAP_NODE){SNAKE, (POINT){1, 0}};
 		map[1][0] = (MAP_NODE){SNAKE, (POINT){0, 0}};
 		head = (POINT){1,0};
@@ -401,27 +407,68 @@ int mode_snake_game(int sw)
 		dir = (POINT){1,0};
 		start = 0;
 		mode_init = 0;
+		score = 0;
+		led_value = 0x80;
 		srand(time(NULL));
+		char init_str[] = "Snake Game!!    Made by Jaehoon";
+		int i = 0;
+		while(init_str[i] != '\0'){
+			int tmp = (int)init_str[i];
+			tmp = (tmp << 8) + i;
+			tmp = (tmp << 8) + TEXT_LCD_EDIT;
+			output_msg_send(MSG_TEXT_LCD_MDF,tmp);
+			i++;
+		}
+		output_msg_send(MSG_TEXT_LCD,0);
+
 		if(PRINT_DEBUG){
 			printf("-----------SNAKE_GAME MODE-------------\n");
 			printf("SW2 4 6 8 : Direction switch\n");
+			printf("SW1 : Start Game\n");
+			printf("SW3 : PAUSE Game\n");
+			printf("SW7 : Exit Game\n");
 			printf("---------------------------------------\n");
 
 		}
 		feed_generate(map);
 	}
 
-	if(sw == 0x080)	//sw 2
+	if(sw == 0x080 && dir.x != 1 )	//sw 2
 		dir = (POINT){-1,0};
-	if(sw == 0x020) //sw 4
+	if(sw == 0x020 && dir.y != 1) //sw 4
 		dir = (POINT){0,-1};
-	if(sw == 0x008)	//sw 6
-		dir = (POINT){1,0};
-	if(sw == 0x002) //sw 8
+	if(sw == 0x010 && dir.y != -1)	//sw 5
 		dir = (POINT){0,1};
-	if(sw == 0x100) //sw 1
+	if(sw == 0x002 && dir.x != -1) //sw 8
+		dir = (POINT){1,0};
+	if(sw == 0x100){ //sw 1
 		start = 1;
-
+		char init_str[] = "Start!!                         ";
+		i = 0;
+		while(init_str[i] != '\0'){
+			int tmp = (int)init_str[i];
+			tmp = (tmp << 8) + i;
+			tmp = (tmp << 8) + TEXT_LCD_EDIT;
+			output_msg_send(MSG_TEXT_LCD_MDF,tmp);
+			i++;
+		}
+		output_msg_send(MSG_TEXT_LCD,0);
+	}
+	if(sw == 0x040){ //sw 3
+		start = 0;
+		char init_str[] = "Pause!!                         ";
+		i = 0;
+		while(init_str[i] != '\0'){
+			int tmp = (int)init_str[i];
+			tmp = (tmp << 8) + i;
+			tmp = (tmp << 8) + TEXT_LCD_EDIT;
+			output_msg_send(MSG_TEXT_LCD_MDF,tmp);
+			i++;
+		}
+		output_msg_send(MSG_TEXT_LCD,0);
+	}
+	if(sw == 0x004)	//sw 7
+		mode_init = 1;
 	if(!start)
 		return 1;
 
@@ -437,14 +484,19 @@ int mode_snake_game(int sw)
 		case EAT:
 			if(PRINT_DEBUG)
 				printf("EAT!!\n");
+			score++;
 			feed_generate(map);
 			break;
 	}
-	if(sw)
-		draw_map(map);
+	led_value >>= 1;
+	if(led_value == 0)
+		led_value = 0x80;
+	output_msg_send(MSG_LED,led_value);
+	output_msg_send(MSG_FND,score);
+	draw_map(map);
 	if(PRINT_DEBUG)
 		printf("HEAD POS : (%d, %d) TAIL POS : (%d, %d)\n",head.x, head.y, tail.x, tail.y);
-	usleep(1000000);
+	usleep(500000);
 	return 1;
 }
 
