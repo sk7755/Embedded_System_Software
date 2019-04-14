@@ -22,9 +22,9 @@ typedef enum{
 typedef enum{
 	CHAR_MODE,INT_MODE 
 }EDITOR_INPUT_MODE;
-#define CHAR_MODE_NUM 3	//한 칸에 모여 있는 char 개수
+#define CHAR_MODE_NUM 3	//The number of char in each switch
 
-typedef enum{
+typedef enum{			//Status for each map node
 	EMPTY, FEED, SNAKE
 }NODE_TYPE;
 
@@ -34,7 +34,7 @@ typedef struct POINT{
 
 typedef struct MAP_NODE{
 	NODE_TYPE type;
-	POINT next;
+	POINT next;			//Store next snake body
 }MAP_NODE;
 
 typedef enum{

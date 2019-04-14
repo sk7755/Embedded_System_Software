@@ -1,7 +1,7 @@
 #include "io_dev.h"
 
 #if IN_CSPRO
-//IN CSPRO KEYBOARD -> SWITCH
+//IN CSPRO KEYBOARD -> SWITCH for keyboard test
 int cspro_key_convert(char ch, MsgType *msg)
 {
 	if('1' <= ch && ch <= '9'){
@@ -97,12 +97,12 @@ unsigned char fpga_set_blank[10] = {
 	// memset(array,0x00,sizeof(array));
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
-unsigned char dot_buff[10] = {0,};
+unsigned char dot_buff[10] = {0,};	//Dot buffer for Dot matrix
 
 unsigned char quit = 0;
 
-unsigned char text_lcd_buff[TEXT_LCD_MAX_BUFF + 1] = {0,};
-int text_lcd_i = 0;
+unsigned char text_lcd_buff[TEXT_LCD_MAX_BUFF + 1] = {0,};	//Text LCD buffer for TEXT LCD device
+ 
 
 int init_dev()
 {
@@ -174,11 +174,12 @@ int init_dev()
 	return 1;
 }
 
+//close device file descripter
 int close_dev()
 {
 	if(IN_CSPRO)
 		return 1;
-	munmap(led_addr, 4096);
+	munmap(led_addr, 4096);	//open LED by mmap
 	close(dev_fnd);
 	close(dev_text_lcd);
 	close(dev_dot);
@@ -189,6 +190,8 @@ int close_dev()
 	return 1;
 }
 
+//output led value by MMAP method
+//leftmost i th bit represented i-LED
 int output_led(int value)
 {
 	if(PRINT_DEBUG)
@@ -205,6 +208,8 @@ int output_led(int value)
 	return 1;
 }
 
+//output 0000~9999 value in FND
+//print just value in FND
 int output_fnd(int value)
 {
 	if(PRINT_DEBUG)
@@ -220,7 +225,7 @@ int output_fnd(int value)
 	unsigned char data[4] = {0,};
 	int d = 1000;
 	int i;
-	for(i = 0;i<4;i++)
+	for(i = 0;i<4;i++)	//Split value to data[4]
 	{
 		data[i] = value / d;
 		value %= d;
@@ -237,6 +242,8 @@ int output_fnd(int value)
 	return 1;
 }
 
+//modify text lcd buffer
+//operation : clear all buffer, left_shift buffer, edit pos position
 int text_lcd_buff_mdf(char character,int pos, TEXT_LCD_OP op)
 {
 	if(PRINT_DEBUG)
@@ -266,6 +273,7 @@ int text_lcd_buff_mdf(char character,int pos, TEXT_LCD_OP op)
 	return 1;
 }
 
+//just print text lcd buffer in TEXT LCD device
 int output_text_lcd()
 {
 	if(PRINT_DEBUG)
@@ -277,6 +285,11 @@ int output_text_lcd()
 	return 1;
 }
 
+//32 bit value = |****|****|****|****|
+//						 x	  y   op
+//operation : clear dot matrix, print number 1 in dot, print alphabet A in dot
+//			  Fill dot buffer in (x.y) position, reverse all value in dot matrix
+//			  print dot buffer in dot matrix device, blink the dot without changing buffer
 int output_dot(int value)
 {
 	DOT_OP op = value & 0xFF;
@@ -336,6 +349,10 @@ void user_signal1(int sig)
 	quit = 1;
 }
 
+//Input process
+//Take input signal from Board devices by NONBLOCK
+//if input signal recieve from device, send the message to main process
+//if it recieves SIGINT signal from main process, break the while loop and return 1;
 int input_process()
 {
 	key_t key = INPUT_KEY;
@@ -358,7 +375,7 @@ int input_process()
 	(void)signal(SIGINT,user_signal1);
 
 	while(!quit){
-		if(IN_CSPRO){
+		if(IN_CSPRO){		//CSPRO TEST CODE, input from keyboard
 			ch = getch();
 			if(cspro_key_convert(ch, &msg)){
 				if(msgsnd(queue_id,(void *)&msg, msg_size, IPC_NOWAIT) < 0){
@@ -381,7 +398,7 @@ int input_process()
 			push_sw_value <<= 1;
 			push_sw_value += push_sw_buff[i];
 		}
-		if(previous_sw_value > 0 && push_sw_value == 0){
+		if(previous_sw_value > 0 && push_sw_value == 0){	//if RELEASE, recognize the input switch
 			msg.mtype = MSG_PUSH_SWITCH;
 			msg.mvalue = previous_sw_value;
 			if(msgsnd(queue_id,(void *)&msg, msg_size, IPC_NOWAIT) < 0){
@@ -394,6 +411,7 @@ int input_process()
 			}
 			previous_sw_value = 0;
 		}
+		//Store max switch value
 		previous_sw_value = previous_sw_value< push_sw_value ? push_sw_value : previous_sw_value;
 
 		//INPUT_EVENT input process
@@ -421,6 +439,10 @@ int input_process()
 	}
 	return 1;
 }
+
+//Output process
+//Take message from main process with BLOCK, print output by using device
+//if it recieves SIGINT signal from main process, break the while loop and return 1;
 
 int output_process()
 {

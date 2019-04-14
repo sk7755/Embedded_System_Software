@@ -73,7 +73,6 @@ typedef enum{
 
 
 int dev_input_event;
-
 int init_dev();
 int output_led(int value);
 int output_fnd(int value);

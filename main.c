@@ -8,13 +8,13 @@ static int msg_size;
 int main()
 {
 	init_dev();
-	int input_pid = fork();
+	int input_pid = fork();		//Input_process fork
 	int output_pid;
 	if(input_pid < 0){
 		printf("fail to fork process1\n");
 		exit(1);
 	}
-	else if (input_pid == 0){
+	else if (input_pid == 0){	
 		input_process();
 		close_dev();
 		if(PRINT_DEBUG)
@@ -22,7 +22,7 @@ int main()
 		return 0;
 	}
 	else
-		output_pid = fork();
+		output_pid = fork();	//Output_process fork
 
 	if (output_pid < 0)
 		printf("fail to fork process2\n");
@@ -37,15 +37,16 @@ int main()
 	mode_init = 1;
 	int status;
 	init_msg_queue();
+
 	while(TRUE){
 		msg_rcv_update();
 		
 		switch(current_mode){
 			case EXIT :
 				close_dev();
-				kill(input_pid, SIGINT);
+				kill(input_pid, SIGINT);	//Send Sigint signal to IO process
 				kill(output_pid,SIGINT);
-				waitpid(input_pid, &status,0);
+				waitpid(input_pid, &status,0);	//Wait for IO process Exit
 				waitpid(output_pid, &status,0);
 				close_msg_queue();
 				if(PRINT_DEBUG)
@@ -106,10 +107,10 @@ int msg_rcv_update()
 		if(PRINT_DEBUG)
 			printf("Main process : message recieved ! - %ld %d\n",msg.mtype, msg.mvalue);
 		switch(msg.mtype){
-			case MSG_PUSH_SWITCH:
+			case MSG_PUSH_SWITCH:			//Input Switch 1~9
 				current_sw = msg.mvalue;
 				break;
-			case MSG_INPUT_EVENT:
+			case MSG_INPUT_EVENT:			//Read key BACK VOL_UP VOL_DOWN
 				switch(msg.mvalue){
 					case BACK_KEY:
 						current_mode = EXIT;

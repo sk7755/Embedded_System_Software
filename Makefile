@@ -1,4 +1,4 @@
-mode = 1
+mode = 0
 
 ifeq ($(mode) ,1)
 	CC = arm-none-linux-gnueabi-gcc

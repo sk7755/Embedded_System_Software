@@ -9,11 +9,13 @@ int mode_clock(int sw)
 	static int previous_sec;	//system
 	static int time_change_led;
 
+	//Read current system time
 	time_t current_time;
 	time(&current_time);
 	struct tm *current_tm;
 	current_tm = gmtime(&current_time);
 
+	//Initialization CLOCK mode
 	if(mode_init){
 		time_change = 0;
 		time_change_led = 0x20;
@@ -46,25 +48,25 @@ int mode_clock(int sw)
 	}
 
 	
-	if(sw == 0x100){
+	if(sw == 0x100){	//sw 1
 		time_change = 1 - time_change;
 		time_change_led = 0x20;
 		if(!time_change)
 			output_msg_send(MSG_LED,0x80);
 	}
 	
-	if(sw == 0x080 && time_change){
+	if(sw == 0x080 && time_change){	//sw 2
 		hour = current_tm->tm_hour;
 		min = current_tm->tm_min;
 		sec = current_tm->tm_sec;
 	}
 
-	if(sw == 0x040){
+	if(sw == 0x040){	//sw 3
 		if(time_change)
 			hour++;
 	}
 	
-	if(sw == 0x020){
+	if(sw == 0x020){	//sw 4
 		if(time_change)
 			min++;
 	}
@@ -76,7 +78,7 @@ int mode_clock(int sw)
 	if(diff_sec < 0)
 		diff_sec += 60;
 
-	if(!time_change){
+	if(!time_change){	//Only flow the time in time change mode
 		sec += diff_sec;
 		diff_min = sec/60;
 		min += diff_min;
@@ -87,12 +89,12 @@ int mode_clock(int sw)
 	}
 	
 	
-	if(time_change && diff_sec > 0){
+	if(time_change && diff_sec > 0){	//LED device blink in time change mode
 		time_change_led ^= 0x30;
 		output_msg_send(MSG_LED,time_change_led);
 	}
 
-	if(diff_min>0 || sw != 0)
+	if(diff_min>0 || sw != 0)	//print changed time
 	{
 		output_msg_send(MSG_FND,hour*100 + min);
 	}
@@ -106,6 +108,7 @@ int mode_counter(int sw)
 	static int radix_type;
 	static int radix[RADIX_NUM] = {2,10,8,4};
 
+	//Initialize Counter Mode
 	if(mode_init){
 		count = 0;
 		radix_type = DECIMAL;
@@ -176,6 +179,7 @@ int radix_convert(int value,int radix)
 	return ret;
 }
 
+//Text Editor mode pad characters
 static char text_editor_pad[10][3] ={{'0','0','0'},
 	{'.','Q','Z'},{'A','B','C'},{'D','E','F'},
 	{'G','H','I'},{'J','K','L'},{'M','N','O'},
@@ -188,6 +192,8 @@ int mode_text_editor(int sw)
 	static int count;
 	static int text_len;
 	static int input_mode;
+
+	//Initalize Text Editor Mode
 	if(mode_init){
 		prev_sw = 0;
 		pad_cur = 0;
@@ -203,7 +209,7 @@ int mode_text_editor(int sw)
 
 		if(PRINT_DEBUG){
 			printf("-----------TEXT EDITOR MODE------------\n");
-			printf("SW1~9 : Input text value\n");
+			printf("SW1~9 : Input text Message\n");
 			printf("SW2+3 : Text LCD clear\n");
 			printf("SW5+6 : Input type change\n");
 			printf("SW8+9 : Input space bar\n");
@@ -211,6 +217,9 @@ int mode_text_editor(int sw)
 
 		}
 	}
+
+	//Change multi switch value to integer
+	//ex) sw1 + sw 3 = press_sw 13
 	int press_sw = 0;
 	int i, j = 1;
 	for(i = 0x100; i>0;i >>= 1,j++){
@@ -245,7 +254,7 @@ int mode_text_editor(int sw)
 				text_len++;
 			}
 		}
-		if(input_mode == INT_MODE){
+		if(input_mode == INT_MODE){	//Integer mode
 			if(text_len == TEXT_LCD_MAX_BUFF){	//text lcd is full
 				output_msg_send(MSG_TEXT_LCD_MDF,TEXT_LCD_LSHIFT);
 				text_len--;
@@ -258,20 +267,20 @@ int mode_text_editor(int sw)
 		}
 		count++;
 	}
-	if(press_sw == 23){
+	if(press_sw == 23){		//Text LCD clear
 		output_msg_send(MSG_TEXT_LCD_MDF,TEXT_LCD_CLEAR);
 		text_len = 0;
 		pad_cur = 0;
 		count++;
 	}
-	if(press_sw == 56){
+	if(press_sw == 56){		//Integer input <-> Character input mode change
 		input_mode = 1 - input_mode;
 		if(input_mode == CHAR_MODE) output_msg_send(MSG_DOT,DOT_A);
 		if(input_mode == INT_MODE) output_msg_send(MSG_DOT,DOT_1);
 		pad_cur = 0;
 		count++;
 	}
-	if(press_sw == 89){
+	if(press_sw == 89){		//Input space bar
 		if(text_len == TEXT_LCD_MAX_BUFF){	//text lcd is full
 			output_msg_send(MSG_TEXT_LCD_MDF,TEXT_LCD_LSHIFT);
 			text_len--;
@@ -280,7 +289,7 @@ int mode_text_editor(int sw)
 		count++;
 	}
 
-	if(press_sw >0){
+	if(press_sw >0){		//Print Text LCD and FND counter
 		count %= 10000;
 		output_msg_send(MSG_TEXT_LCD,0);
 		output_msg_send(MSG_FND,count);
@@ -301,6 +310,7 @@ int mode_draw_board(int sw)
 	struct tm *current_tm;
 	current_tm = gmtime(&current_time);
 	
+	//Initialize Draw Board mode
 	if(mode_init){
 		x = 0 ,y = 0;
 		count = 0;
@@ -326,53 +336,53 @@ int mode_draw_board(int sw)
 	}
 	
 	int diff_sec = current_tm->tm_sec - previous_sec;
-	if(cursor_blink && diff_sec != 0)
+	if(cursor_blink && diff_sec != 0)		//Blink cursor if cursor blink is 1
 		output_msg_send(MSG_DOT,(x<<16) + (y<<8) + DOT_BLINK);
 
-	if(sw == 0x100){	//sw 1
+	if(sw == 0x100){	//sw 1 mode initialize
 		mode_init = 1;
 		count++;
 	}
-	if(sw == 0x080){	//sw 2
+	if(sw == 0x080){	//sw 2 up
 		if(x > 0)
 			x--;
 		count++;
 	}
-	if(sw == 0x040){	//sw 3
+	if(sw == 0x040){	//sw 3 cursor blink
 		cursor_blink = 1 - cursor_blink;
 		output_msg_send(MSG_DOT,DOT_PRINT);
 		count++;
 	}
-	if(sw == 0x020){	//sw 4
+	if(sw == 0x020){	//sw 4 left
 		if(y > 0)
 			y--;
 		count++;
 	}
-	if(sw == 0x010){	//sw 5
+	if(sw == 0x010){	//sw 5 fill
 		output_msg_send(MSG_DOT,(x<<16) + (y<<8) +DOT_FILL);
 		output_msg_send(MSG_DOT,DOT_PRINT);
 		count++;
 	}
-	if(sw == 0x008){	//sw 6
+	if(sw == 0x008){	//sw 6 right
 		if(y < DOT_WIDTH - 1)
 			y++;
 		count++;
 	}
-	if(sw == 0x004){	//sw 7
+	if(sw == 0x004){	//sw 7 clear the dot matrix
 		output_msg_send(MSG_DOT,DOT_CLEAR);
 		count++;
 	}
-	if(sw == 0x002){	//sw 8
+	if(sw == 0x002){	//sw 8 down
 		if(x < DOT_HEIGHT - 1)
 			x++;
 		count++;
 	}
-	if(sw == 0x001){
+	if(sw == 0x001){	//sw 9 dot reverse
 		output_msg_send(MSG_DOT,DOT_REVERSE);
 		count++;
 	}
 
-	if(sw){
+	if(sw){	//print counter in FND
 		count %= 10000;
 		output_msg_send(MSG_FND,count);
 	}
@@ -390,6 +400,8 @@ int mode_snake_game(int sw)
 	static int score;
 	static int led_value;
 	int i,j;
+
+	//Initialize Snake game
 	if(mode_init){
 		for(i = 0; i<10;i++){
 			for(j =0;j<7;j++){
@@ -410,6 +422,7 @@ int mode_snake_game(int sw)
 		score = 0;
 		led_value = 0x80;
 		srand(time(NULL));
+		//Print text LCD 
 		char init_str[] = "Snake Game!!    Made by Jaehoon";
 		int i = 0;
 		while(init_str[i] != '\0'){
@@ -433,15 +446,15 @@ int mode_snake_game(int sw)
 		feed_generate(map);
 	}
 
-	if(sw == 0x080 && dir.x != 1 )	//sw 2
+	if(sw == 0x080 && dir.x != 1 )	//sw 2 up
 		dir = (POINT){-1,0};
-	if(sw == 0x020 && dir.y != 1) //sw 4
+	if(sw == 0x020 && dir.y != 1) //sw 4 left
 		dir = (POINT){0,-1};
-	if(sw == 0x010 && dir.y != -1)	//sw 5
+	if(sw == 0x008 && dir.y != -1)	//sw 6 right
 		dir = (POINT){0,1};
-	if(sw == 0x002 && dir.x != -1) //sw 8
+	if(sw == 0x002 && dir.x != -1) //sw 8 down
 		dir = (POINT){1,0};
-	if(sw == 0x100){ //sw 1
+	if(sw == 0x100){ //sw 1	start the game
 		start = 1;
 		char init_str[] = "Start!!                         ";
 		i = 0;
@@ -454,7 +467,7 @@ int mode_snake_game(int sw)
 		}
 		output_msg_send(MSG_TEXT_LCD,0);
 	}
-	if(sw == 0x040){ //sw 3
+	if(sw == 0x040){ //sw 3 pause the game
 		start = 0;
 		char init_str[] = "Pause!!                         ";
 		i = 0;
@@ -467,7 +480,7 @@ int mode_snake_game(int sw)
 		}
 		output_msg_send(MSG_TEXT_LCD,0);
 	}
-	if(sw == 0x004)	//sw 7
+	if(sw == 0x004)	//sw 7 Initialize the game
 		mode_init = 1;
 	if(!start)
 		return 1;
@@ -491,8 +504,8 @@ int mode_snake_game(int sw)
 	led_value >>= 1;
 	if(led_value == 0)
 		led_value = 0x80;
-	output_msg_send(MSG_LED,led_value);
-	output_msg_send(MSG_FND,score);
+	output_msg_send(MSG_LED,led_value);	//LED device shift for every tick
+	output_msg_send(MSG_FND,score);	//Print the score
 	draw_map(map);
 	if(PRINT_DEBUG)
 		printf("HEAD POS : (%d, %d) TAIL POS : (%d, %d)\n",head.x, head.y, tail.x, tail.y);
@@ -500,7 +513,9 @@ int mode_snake_game(int sw)
 	return 1;
 }
 
-//fail -1 eat 0 move 1
+//In current map, Move the snake and return the status
+//There are 3 cases.
+//1. Eat the feed 2. Die since be bumped into wall or itself 3. Just move
 int move_or_eat(MAP_NODE map[DOT_HEIGHT][DOT_WIDTH], POINT *head, POINT *tail, POINT dir)
 {
 	POINT next_head;
@@ -514,14 +529,14 @@ int move_or_eat(MAP_NODE map[DOT_HEIGHT][DOT_WIDTH], POINT *head, POINT *tail, P
 		 return DIE;
 
 	switch(map[next_head.x][next_head.y].type){
-		case FEED :
+		case FEED :		//Eat the feed
 			map[head->x][head->y].next = next_head;
 			map[next_head.x][next_head.y] =(MAP_NODE){SNAKE,{0,0}};
 			*head = next_head;
 			return EAT;
-		case SNAKE :
+		case SNAKE :	//Bumped into itself
 			return DIE;
-		case EMPTY :
+		case EMPTY :	//Just move
 			map[head->x][head->y].next = next_head;
 			map[next_head.x][next_head.y] = (MAP_NODE){SNAKE,{0,0}};
 			*head = next_head;
@@ -534,6 +549,7 @@ int move_or_eat(MAP_NODE map[DOT_HEIGHT][DOT_WIDTH], POINT *head, POINT *tail, P
 	}
 }
 
+//Randomly generate feed in map which is empty
 int feed_generate(MAP_NODE map[DOT_HEIGHT][DOT_WIDTH])
 {
 	int i,j;
@@ -548,6 +564,7 @@ int feed_generate(MAP_NODE map[DOT_HEIGHT][DOT_WIDTH])
 	return 1;
 }
 
+//Draw the map in dot matrix
 int draw_map(MAP_NODE map[DOT_HEIGHT][DOT_WIDTH])
 {
 	int i,j;
@@ -564,6 +581,7 @@ int draw_map(MAP_NODE map[DOT_HEIGHT][DOT_WIDTH])
 	return 1;
 }
 
+//Message send Message{mtype, mvalue} to output process
 int output_msg_send(long mtype, int mvalue)
 {
 	MsgType msg = {mtype, mvalue};
