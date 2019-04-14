@@ -307,7 +307,6 @@ int output_dot(int value)
 	}
 	if(op == DOT_FILL){
 		dot_buff[arr_idx] |= 0x40 >> bit_idx;
-		write(dev_dot, dot_buff, DOT_MAX_BUFF);
 	}
 	if(op == DOT_REVERSE){
 		for(i = 0;i<DOT_MAX_BUFF;i++)

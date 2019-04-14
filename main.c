@@ -65,6 +65,9 @@ int main()
 			case DRAW_BOARD :
 				mode_draw_board(current_sw);
 				break;
+			case SNAKE_GAME :
+				mode_snake_game(current_sw);
+				break;
 			default :
 				;
 		}

@@ -350,6 +350,7 @@ int mode_draw_board(int sw)
 	}
 	if(sw == 0x010){	//sw 5
 		output_msg_send(MSG_DOT,(x<<16) + (y<<8) +DOT_FILL);
+		output_msg_send(MSG_DOT,DOT_PRINT);
 		count++;
 	}
 	if(sw == 0x008){	//sw 6
@@ -376,6 +377,137 @@ int mode_draw_board(int sw)
 		output_msg_send(MSG_FND,count);
 	}
 	previous_sec = current_tm-> tm_sec;
+
+	return 1;
+}
+
+int mode_snake_game(int sw)
+{
+	static MAP_NODE map[DOT_HEIGHT][DOT_WIDTH];
+	static POINT head, tail;
+	static POINT dir;
+	static int start;
+	int i,j;
+	if(mode_init){
+		for(i = 0; i<10;i++){
+			for(j =0;j<7;j++){
+				map[i][j] = (MAP_NODE){EMPTY,(POINT){0,0}};
+			}
+		}
+		map[0][0] = (MAP_NODE){SNAKE, (POINT){1, 0}};
+		map[1][0] = (MAP_NODE){SNAKE, (POINT){0, 0}};
+		head = (POINT){1,0};
+		tail = (POINT){0,0};
+		dir = (POINT){1,0};
+		start = 0;
+		mode_init = 0;
+		srand(time(NULL));
+		if(PRINT_DEBUG){
+			printf("-----------SNAKE_GAME MODE-------------\n");
+			printf("SW2 4 6 8 : Direction switch\n");
+			printf("---------------------------------------\n");
+
+		}
+		feed_generate(map);
+	}
+
+	if(sw == 0x080)	//sw 2
+		dir = (POINT){-1,0};
+	if(sw == 0x020) //sw 4
+		dir = (POINT){0,-1};
+	if(sw == 0x008)	//sw 6
+		dir = (POINT){1,0};
+	if(sw == 0x002) //sw 8
+		dir = (POINT){0,1};
+	if(sw == 0x100) //sw 1
+		start = 1;
+
+	if(!start)
+		return 1;
+
+	switch(move_or_eat(map,&head,&tail,dir)){
+		case MOVE:
+			break;
+		case DIE:
+			start = 0;
+			mode_init = 1;
+			if(PRINT_DEBUG)
+				printf("GAME OVER!!\n");
+			break;
+		case EAT:
+			if(PRINT_DEBUG)
+				printf("EAT!!\n");
+			feed_generate(map);
+			break;
+	}
+	if(sw)
+		draw_map(map);
+	if(PRINT_DEBUG)
+		printf("HEAD POS : (%d, %d) TAIL POS : (%d, %d)\n",head.x, head.y, tail.x, tail.y);
+	usleep(1000000);
+	return 1;
+}
+
+//fail -1 eat 0 move 1
+int move_or_eat(MAP_NODE map[DOT_HEIGHT][DOT_WIDTH], POINT *head, POINT *tail, POINT dir)
+{
+	POINT next_head;
+	next_head.x = head->x + dir.x;
+	next_head.y = head->y + dir.y;
+	 
+	if(next_head. x < 0 || next_head.x >= DOT_HEIGHT)
+		 return DIE;
+	
+	if(next_head. y < 0 || next_head.y >= DOT_WIDTH)
+		 return DIE;
+
+	switch(map[next_head.x][next_head.y].type){
+		case FEED :
+			map[head->x][head->y].next = next_head;
+			map[next_head.x][next_head.y] =(MAP_NODE){SNAKE,{0,0}};
+			*head = next_head;
+			return EAT;
+		case SNAKE :
+			return DIE;
+		case EMPTY :
+			map[head->x][head->y].next = next_head;
+			map[next_head.x][next_head.y] = (MAP_NODE){SNAKE,{0,0}};
+			*head = next_head;
+			POINT tmp = map[tail->x][tail->y].next;
+			map[tail->x][tail->y] = (MAP_NODE){EMPTY, {0,0}};
+			*tail = tmp;
+			return MOVE;
+		default :
+			return ERROR;
+	}
+}
+
+int feed_generate(MAP_NODE map[DOT_HEIGHT][DOT_WIDTH])
+{
+	int i,j;
+	
+	do{
+		i = rand() % DOT_HEIGHT;
+		j = rand() % DOT_WIDTH;
+	}while(map[i][j].type != EMPTY);
+
+	map[i][j] = (MAP_NODE){FEED, {0,0}};
+
+	return 1;
+}
+
+int draw_map(MAP_NODE map[DOT_HEIGHT][DOT_WIDTH])
+{
+	int i,j;
+
+	output_msg_send(MSG_DOT,DOT_CLEAR);
+	for(i =0;i<DOT_HEIGHT;i++){
+		for(j=0;j<DOT_WIDTH;j++){
+			if(map[i][j].type != EMPTY)
+				output_msg_send(MSG_DOT,(i<<16) + (j<<8) +DOT_FILL);
+		}
+	}
+	output_msg_send(MSG_DOT,DOT_PRINT);
 
 	return 1;
 }

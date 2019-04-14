@@ -24,10 +24,31 @@ typedef enum{
 }EDITOR_INPUT_MODE;
 #define CHAR_MODE_NUM 3	//한 칸에 모여 있는 char 개수
 
+typedef enum{
+	EMPTY, FEED, SNAKE
+}NODE_TYPE;
+
+typedef struct POINT{
+	int x,y;
+}POINT;
+
+typedef struct MAP_NODE{
+	NODE_TYPE type;
+	POINT next;
+}MAP_NODE;
+
+typedef enum{
+	ERROR, MOVE, EAT, DIE
+}SANKE_STATUS;
+
 int output_msg_send(long mtype, int mvalue);
 int radix_convert(int value, int radix);
 int mode_clock(int sw);
 int mode_counter(int sw);
 int mode_text_editor(int sw);
 int mode_draw_board(int sw);
+int mode_snake_game(int sw);
+int move_or_eat(MAP_NODE map[10][7], POINT *head, POINT *tail, POINT dir);
+int feed_generate(MAP_NODE map[10][7]);
+int draw_map(MAP_NODE map[10][7]);
 #endif
