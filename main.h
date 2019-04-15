@@ -15,8 +15,8 @@
 #define OUTPUT_KEY 0x5678
 #define TRUE 1
 #define FALSE 0
-#define IN_CSPRO 1			//For CSPRO TEST
-#define PRINT_DEBUG 1
+#define IN_CSPRO 0			//For CSPRO TEST
+#define PRINT_DEBUG 0
 typedef struct MsgType{		//Message Structure
 	long mtype;
 	int mvalue;

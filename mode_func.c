@@ -78,16 +78,16 @@ int mode_clock(int sw)
 	if(diff_sec < 0)
 		diff_sec += 60;
 
-	if(!time_change){	//Only flow the time in time change mode
-		sec += diff_sec;
-		diff_min = sec/60;
+	sec += diff_sec;
+	diff_min = sec/60;
+	sec %= 60;
+
+
+	if(!time_change)	//Don't flow the time in time change mode
 		min += diff_min;
-		sec %= 60;
-		hour += min / 60;
-		min %= 60;
-		hour %= 24;
-	}
-	
+	hour += min / 60;
+	min %= 60;
+	hour %= 24;
 	
 	if(time_change && diff_sec > 0){	//LED device blink in time change mode
 		time_change_led ^= 0x30;
