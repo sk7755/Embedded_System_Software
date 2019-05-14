@@ -386,7 +386,7 @@
 		CALL(sys_sendmmsg)
 /* 375 */	CALL(sys_setns)
 // New System Call Jaehoon
-/* 380 */	CALL(sys_make_data)
+/* 376 */	CALL(sys_make_data)
 #ifndef syscalls_counted
 .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
 #define syscalls_counted

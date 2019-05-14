@@ -403,7 +403,7 @@
 #define __NR_sendmmsg			(__NR_SYSCALL_BASE+374)
 #define __NR_setns			(__NR_SYSCALL_BASE+375)
 // NEW SYSTEM CALL EMBEDDED SYSTEM SOFTWARE
-#define __NR_make_data			(__NR_SYSCALL_BASE+380)
+#define __NR_make_data			(__NR_SYSCALL_BASE+376)
 /*
  * The following SWIs are ARM private.
  */

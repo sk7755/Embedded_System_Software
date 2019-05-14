@@ -10,7 +10,7 @@ Auth : sk7755@naver.com*/
 #include <fcntl.h>
 #include <syscall.h>
 
-#include "dev_driver.h"
+#include "../module/dev_driver.h"
 #define MY_DEVICE "/dev/dev_driver"
 
 int main(int argc, char **argv)
@@ -56,19 +56,13 @@ int main(int argc, char **argv)
 	}
 	start_number = atoi(argv[3]);
 
-	if(DEBUG){
-		printf("interval %d count %d start_number %d\n",interval, count,start_number);
-	}
-	
 	dev = open(MY_DEVICE, O_RDWR);
 	if(dev < 0){
 		printf("Device open error : %s\n",MY_DEVICE); 
 		exit(1);
 	}
 
-	unsigned int data = syscall(380,interval, count,start_number);
-
-	printf("DATA %d\n",data);
+	unsigned int data = syscall(376,interval, count,start_number);
 	int ret_val = ioctl(dev, IOCTL_SET_TIMER, data);
 
 	if(ret_val < 0){
