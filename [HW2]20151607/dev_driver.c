@@ -27,7 +27,25 @@ static unsigned char *iom_fpga_text_lcd_addr;
 static unsigned char *iom_fpga_led_addr;
 static unsigned char *iom_fpga_dot_addr;
 
-static unsigned char text_lcd_value[33] = "20151607        CHUNG JAE HOON  ";
+static unsigned char text_lcd_buffer[33] = "20151607        CHUNG JAE HOON  ";
+static int first_dir = 1;
+static int second_dir = 1;
+
+
+igned char fpga_number[10][10] = {
+	{0x3e,0x7f,0x63,0x73,0x73,0x6f,0x67,0x63,0x7f,0x3e}, // 0
+	{0x0c,0x1c,0x1c,0x0c,0x0c,0x0c,0x0c,0x0c,0x0c,0x1e}, // 1
+	{0x7e,0x7f,0x03,0x03,0x3f,0x7e,0x60,0x60,0x7f,0x7f}, // 2
+ 	{0xfe,0x7f,0x03,0x03,0x7f,0x7f,0x03,0x03,0x7f,0x7e}, // 3
+	{0x66,0x66,0x66,0x66,0x66,0x66,0x7f,0x7f,0x06,0x06}, // 4
+	{0x7f,0x7f,0x60,0x60,0x7e,0x7f,0x03,0x03,0x7f,0x7e}, // 5
+	{0x60,0x60,0x60,0x60,0x7e,0x7f,0x63,0x63,0x7f,0x3e}, // 6
+	{0x7f,0x7f,0x63,0x63,0x03,0x03,0x03,0x03,0x03,0x03}, // 7
+	{0x3e,0x7f,0x63,0x63,0x7f,0x7f,0x63,0x63,0x7f,0x3e}, // 8
+	{0x3e,0x7f,0x63,0x63,0x7f,0x3f,0x03,0x03,0x03,0x03} // 9
+};
+
+
 static struct timer_element{
 	struct timer_list timer;
 	int count;
@@ -70,9 +88,9 @@ int iom_dev_driver_ioctl(struct inode *inode, struct file *file, unsigned int io
 	switch(ioctl_num){
 		case IOCTL_SET_TIMER:
 			data = (unsigned int)ioctl_param;
-			interval = IOCTL_GET_INTERVAL(data);
-			int count = IOCTL_GET_COUNT(data);
-			start_number = IOCTL_GET_START(data);
+			interval = DECODE_INTERVAL(data);
+			int count = DECODE_COUNT(data);
+			start_number = DECODE_START(data);
 			
 			elt.count = 0;
 			
@@ -95,7 +113,7 @@ static void iom_fpga_blink(unsigned long timeout)
 	if(p_data->count > count)
 		return;
 
-	int i;
+	int i,j ;
 	for(i = 1000; i>0;i/=10)
 	{
 		if(current_number/i){
@@ -129,10 +147,27 @@ static void iom_fpga_blink(unsigned long timeout)
 	outw(led_value, (unsigned int)iom_fpga_led_addr);
 
 	//TEXT LCD write
+	if(text_lcd_buffer[DIR_TO_INDEX(first_dir)] != ' ')
+		first_dir = -first_dir;
+	if(text_lcd_buffer[DIR_TO_INDEX(second_dir) + 16] != ' ')
+		second_dir = -second_dir;
 
+	SHIFT_TEXT_LCD(first_dir, text_lcd_buffer);
+	SHIFT_TEXT_LCD(second_dif, text_lcd_buffer + 16);
+	unsigned short int text_lcd_value;
+
+	for(j = 0 ; j < 33 ; j+=2)
+		text_lcd_value = (text_lcd_buffer[j] & 0xFF) << 8 | (text_lcd_buffer[i + 1] & 0xFF);
+	outw(text_lcd_value,(unsigned int)iom_fpga_text_lcd_addr + j);
 
 	//DOT write
 	unsigned short int dot_value;
+	int length = sizeof(fpga_number[current_number/i]);
+	for(j = 0; j < length;j++)
+	{
+		dot_value = fpga_number[current_number/i][j] & 0x7F;
+		outw(dot_value,(unsigned int)iom_fpga_dot_addr + j*2);
+	}
 
 
 	mydata.timer.expires = get_jiffies_64() + (interval * HZ / 10);
