@@ -57,14 +57,18 @@ struct interval;
 struct count;
 
 //define functions
+int iom_dev_driver_open(struct inode *, struct file *);
+int iom_dev_driver_release(struct inode *, struct file *);
+long iom_dev_driver_ioctl(struct file *, unsigned int, unsigned long);
+static void iom_fpga_blink(unsigned long);
 
 //define file_operations structure
 struct file_operations iom_dev_driver_fops =
 {
-	owner:	THIS_MODULE,
-	open:	iom_dev_driver_open,
-	
-	release:	iom_dev_driver_release,
+	.owner =			THIS_MODULE,
+	.open =				iom_dev_driver_open,
+	.unlocked_ioctl = 	iom_dev_driver_ioctl,
+	.release =			iom_dev_driver_release,
 };
 
 int iom_dev_driver_open(struct inode *minode, struct file *mfile)
@@ -82,7 +86,7 @@ int iom_dev_driver_release(struct inode *minode, struct file *mfile)
 	return 0;
 }
 
-int iom_dev_driver_ioctl(struct inode *inode, struct file *file, unsigned int ioctl_num, unsigned long ioctl_param)
+long iom_dev_driver_ioctl(struct file *file, unsigned int ioctl_num, unsigned long ioctl_param)
 {
 	unsigned int data;
 	switch(ioctl_num){
