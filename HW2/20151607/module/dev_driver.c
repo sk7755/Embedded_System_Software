@@ -75,6 +75,8 @@ int iom_dev_driver_open(struct inode *minode, struct file *mfile)
 	if(dev_driver_port_usage != 0)
 		return -EBUSY;
 	strcpy(text_lcd_buffer,"20151607        CHUNG JAE HOON  ");
+	first_dir = 1;
+	second_dir = 1;
 	dev_driver_port_usage = 1;
 	return 0;
 }
