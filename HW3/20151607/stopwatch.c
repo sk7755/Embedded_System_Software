@@ -273,6 +273,7 @@ void __exit stopwatch_exit(void)
 	cdev_del(&stopwatch_cdev);
 	iounmap(fpga_fnd_addr);
 	del_timer_sync(&elt.timer);
+	del_timer_sync(&exit_elt.timer);
 	unregister_chrdev(STOPWATCH_MAJOR, STOPWATCH_NAME);
 }
 
