@@ -25,5 +25,5 @@ clean:
 	rm -rf Module.symvers
 	rm -rf modules.order
 	rm -rf .tmp*
-	rm -rf .dev*
+	rm -rf .stopwatch*
 	rm -rf $(APP)
