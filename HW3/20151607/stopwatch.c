@@ -30,7 +30,6 @@ static wait_queue_head_t my_queue;
 
 static int push_flag;
 static unsigned int pushed_time; 
-static int exit_flag;
 
 struct timer_element{
 	struct timer_list timer;
@@ -44,7 +43,8 @@ static int stopwatch_register_cdev(void);
 int stopwatch_open(struct inode *, struct file *);
 int stopwatch_release(struct inode *, struct file *);
 static int stopwatch_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos);
-static void fpga_fnd_print(int number);
+static void fpga_fnd_print(unsigned int sec);
+static void exit_timer_function(unsigned long timeout);
 irqreturn_t inter_handler1(int irq, void *dev_id, struct pt_regs *reg);
 irqreturn_t inter_handler2(int irq, void *dev_id, struct pt_regs *reg);
 irqreturn_t inter_handler3(int irq, void *dev_id, struct pt_regs *reg);
@@ -57,33 +57,42 @@ struct file_operations stopwatch_fops =
 	.write = 		stopwatch_write,
 	.release = 		stopwatch_release,
 
-}
+};
 
 //KEY_HOME start
 irqreturn_t inter_handler1(int irq, void *dev_id, struct pt_regs *reg)
 {
 	stopwatch_cont = 1;
 	del_timer_sync(&elt.timer);
-	elt.timer.expires = get_jiffies_64() + HZ / 1000;
+	elt.timer.expires = get_jiffies_64() + HZ / SEC_INTERVAL;
 	elt.timer.data = (unsigned long)&elt;
 	elt.timer.function = stopwatch_timer_function;
 	add_timer(&elt.timer);
 
-	return IRQ_HANDLER;
+	return IRQ_HANDLED;
 }
 
 //KEY_BACK pause
 irqreturn_t inter_handler2(int irq, void *dev_id, struct pt_regs *reg)
 {
-	stopwatch_cont = 0;
-	return IRQ_HANDLER;
+	stopwatch_cont = 1 - stopwatch_cont;
+	if(stopwatch_cont == 1){
+		del_timer_sync(&elt.timer);
+		elt.timer.expires = get_jiffies_64() + HZ / SEC_INTERVAL;
+		elt.timer.data = (unsigned long)&elt;
+		elt.timer.function = stopwatch_timer_function;
+		add_timer(&elt.timer);
+	}
+
+	return IRQ_HANDLED;
 }
 
 //KEY_VOLUMEUP reset
 irqreturn_t inter_handler3(int irq, void *dev_id, struct pt_regs *reg)
 {
 	stopwatch_time = 0;
-	return IRQ_HANDLER;
+	fpga_fnd_print(stopwatch_time / SEC_INTERVAL);
+	return IRQ_HANDLED;
 }
 
 //KEY_VOLUMEDOWN exit
@@ -91,18 +100,15 @@ irqreturn_t inter_handler4(int irq, void *dev_id, struct pt_regs *reg)
 {
 	push_flag = 1 - push_flag;
 	if(push_flag == 1){
-		exit_flag = 0;
 		del_timer_sync(&exit_elt.timer);
-		exit_elt.timer.expires = get_jiffies_64() + HZ / 1000;
+		exit_elt.timer.expires = get_jiffies_64() + HZ / SEC_INTERVAL;
 		exit_elt.timer.data = (unsigned long)&elt;
 		exit_elt.timer.function = exit_timer_function;
 		pushed_time = 0;
 		add_timer(&exit_elt.timer);
 	}
-	else if (exit_flag == 1)
-		__wake_up(&my_queue,1,1,NULL);
 
-	return IRQ_HANDLER;
+	return IRQ_HANDLED;
 }
 
 int stopwatch_open(struct inode *minode, struct file *mfile)
@@ -117,7 +123,7 @@ int stopwatch_open(struct inode *minode, struct file *mfile)
 	stopwatch_cont = 0;
 	stopwatch_time = 0;
 	push_flag = 0;
-
+	fpga_fnd_print(stopwatch_time / SEC_INTERVAL);
 	// int1
 	gpio_direction_input(IMX_GPIO_NR(1,11));
 	irq = gpio_to_irq(IMX_GPIO_NR(1,11));
@@ -160,28 +166,29 @@ int stopwatch_release(struct inode *minode, struct file *mfile)
 
 static int stopwatch_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
 {
-	interruptible_sleep_op(&my_queue);
+	interruptible_sleep_on(&my_queue);
 	return 0;
 }
 
-static void fpga_fnd_print(int sec)
+static void fpga_fnd_print(unsigned int sec)
 {
 	int i;
-	int hour = sec / 60;
+	int min = sec / 60;
 	unsigned short int fnd_value = 0;
 	int number =0;
 	sec %= 60;
 	 
-	number = hour * 100 + sec;
+	number = min * 100 + sec;
 	for(i = 1000; i> 0; i/=10){
 		fnd_value = (fnd_value << 4) + (number / i);
+		number %= i;
 	}
 	outw(fnd_value,(unsigned int)fpga_fnd_addr);
 }
 
 static void stopwatch_timer_function(unsigned long timeout)
 {
-	struct timer_element *p_data = (struct timer_element *)timeout;
+//	struct timer_element *p_data = (struct timer_element *)timeout;
 
 	if(stopwatch_cont == 0){	//exit condition
 		return;
@@ -190,10 +197,10 @@ static void stopwatch_timer_function(unsigned long timeout)
 
 	stopwatch_time = (stopwatch_time + 1) % STOPWATCH_BOUND;
 
-	if(stopwatch % 1000 == 0)
-		fpga_fnd_print(stopwatch_time / 1000);
+	if(stopwatch_time % SEC_INTERVAL == 0)
+		fpga_fnd_print(stopwatch_time / SEC_INTERVAL);
 
-	elt.timer.expires = get_jiffies_64() + HZ/1000;
+	elt.timer.expires = get_jiffies_64() + HZ/SEC_INTERVAL;
 	elt.timer.data = (unsigned long)&elt;
 	elt.timer.function = stopwatch_timer_function;
 
@@ -202,17 +209,22 @@ static void stopwatch_timer_function(unsigned long timeout)
 
 static void exit_timer_function(unsigned long timeout)
 {
-	struct timer_element *p_data = (struct timer_element *)timeout;
+//	struct timer_element *p_data = (struct timer_element *)timeout;
 
-	if(push_flag == 0){
-		if(pushed_time >= 3000)
-			exit_flag = 1;
-		return;
+	if(push_flag == 1){
+		if(pushed_time >= 3 * SEC_INTERVAL){
+			__wake_up(&my_queue,1,1,NULL);	
+			del_timer_sync(&elt.timer);
+			fpga_fnd_print(0);
+			return;
+		}
 	}
+	else
+		return;
 
 	pushed_time = (pushed_time + 1 ) % STOPWATCH_BOUND;
 	
-	exit_elt.timer.expires = get_jiffies_64() + HZ/1000;
+	exit_elt.timer.expires = get_jiffies_64() + HZ/SEC_INTERVAL;
 	exit_elt.timer.data = (unsigned long)&exit_elt;
 	exit_elt.timer.function = exit_timer_function;
 
@@ -234,7 +246,7 @@ static int stopwatch_register_cdev(void)
 	stopwatch_cdev.ops = &stopwatch_fops;
 	error = cdev_add(&stopwatch_cdev, stopwatch_dev,1);
 	if(error){
-		printK(KERN_NOTICE "Stopwatch Register Error %d\n",error);
+		printk(KERN_NOTICE "Stopwatch Register Error %d\n",error);
 		return error;
 	}
 	return 0;
@@ -248,7 +260,7 @@ int __init stopwatch_init(void)
 
 	fpga_fnd_addr = ioremap(FPGA_FND_ADDRESS,0x04);
 
-	printk("init module, %s major number : %d\n", IOM_DEV_DRIVER_NAME, IOM_DEV_DRIVER_MAJOR);
+	printk("init module, %s major number : %d\n", STOPWATCH_NAME, STOPWATCH_MAJOR);
 
 	init_timer(&(elt.timer));
 	init_timer(&(exit_elt.timer));

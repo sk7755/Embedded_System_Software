@@ -2,8 +2,8 @@
 #define STOPWATCH_H
 
 #define STOPWATCH_MAJOR 242
-#define STOPWATCh_NAME "stopwatch"
-
+#define STOPWATCH_NAME "stopwatch"
+#define STOPWATCH_BOUND (3600 * SEC_INTERVAL)
 #define FPGA_FND_ADDRESS 0x08000004
-
+#define SEC_INTERVAL 10
 #endif

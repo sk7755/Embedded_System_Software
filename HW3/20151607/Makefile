@@ -4,8 +4,13 @@ obj-m   := stopwatch.o
 
 KDIR    :=/work/achroimx_kernel
 PWD     :=$(shell pwd)
-all: driver
+APP	:= app
+
+all: app driver
 #all: driver 
+
+app :
+	arm-none-linux-gnueabi-gcc -static -o $(APP) $(APP).c
 
 driver:
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules ARCH=arm
@@ -21,3 +26,4 @@ clean:
 	rm -rf modules.order
 	rm -rf .tmp*
 	rm -rf .dev*
+	rm -rf $(APP)
