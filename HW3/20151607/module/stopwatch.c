@@ -124,7 +124,7 @@ irqreturn_t inter_handler4(int irq, void *dev_id, struct pt_regs *reg)
 		exit_elt.timer.expires = get_jiffies_64() + HZ / SEC_INTERVAL;
 		exit_elt.timer.data = (unsigned long)&elt;
 		exit_elt.timer.function = exit_timer_function;
-		pushed_time = 0;
+		pushed_time = 1;
 		add_timer(&exit_elt.timer);
 	}
 
@@ -183,6 +183,8 @@ int stopwatch_open(struct inode *minode, struct file *mfile)
 int stopwatch_release(struct inode *minode, struct file *mfile)
 {
 	dev_driver_port_usage = 0;
+	del_timer_sync(&elt.timer);
+	del_timer_sync(&exit_elt.timer);
 	free_irq(gpio_to_irq(IMX_GPIO_NR(1, 11)), NULL);
 	free_irq(gpio_to_irq(IMX_GPIO_NR(1, 12)), NULL);
 	free_irq(gpio_to_irq(IMX_GPIO_NR(2, 15)), NULL);
