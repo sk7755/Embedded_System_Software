@@ -70,6 +70,7 @@ struct file_operations stopwatch_fops =
 irqreturn_t inter_handler1(int irq, void *dev_id, struct pt_regs *reg)
 {
 	stopwatch_cont = 1;
+	stopwatch_time++;
 	del_timer_sync(&elt.timer);
 	elt.timer.expires = get_jiffies_64() + HZ / SEC_INTERVAL;
 	elt.timer.data = (unsigned long)&elt;
@@ -90,6 +91,7 @@ irqreturn_t inter_handler2(int irq, void *dev_id, struct pt_regs *reg)
 	stopwatch_cont = 1 - stopwatch_cont;
 	if(stopwatch_cont == 1){
 		del_timer_sync(&elt.timer);
+		stopwatch_time++;
 		elt.timer.expires = get_jiffies_64() + HZ / SEC_INTERVAL;
 		elt.timer.data = (unsigned long)&elt;
 		elt.timer.function = stopwatch_timer_function;
