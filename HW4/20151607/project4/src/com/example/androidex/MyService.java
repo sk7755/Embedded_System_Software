@@ -7,8 +7,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 
-
-//서비스 클래스를 구현하려면, Service 를 상속받는다
 public class MyService extends Service {
 	public static boolean isStop = false;
 	public int count = 0;
@@ -31,6 +29,7 @@ public class MyService extends Service {
         Log.e("LOG", "onCreate()");
         super.onCreate();
         count = 0;
+        //Run Thread
         counter = new Thread(new Counter());
         counter.start();
     }
@@ -47,6 +46,7 @@ public class MyService extends Service {
         super.onDestroy();
     }
 
+    //Thread : Increase count every second
     public class Counter implements Runnable{
     	public Handler handler = new Handler();
     	@Override
@@ -67,6 +67,7 @@ public class MyService extends Service {
     	}
     }
     
+    //service function : return count
     public int get_time(){
     	return count;
     }

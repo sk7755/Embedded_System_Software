@@ -34,16 +34,20 @@ public class MainActivity2 extends Activity{
 		public TextView tv;
 		public boolean isBind;
 		Thread viewtimer;
+		
+		//View Time in Activity by Handler
 		public Handler handler = new Handler(){
 			@Override
 			public void handleMessage(Message msg){
-				if(msg.what == 0){
-					
+				if(msg.what == 0){			
 					tv.setText(String.format("%02d",current_sec/60) + ":" + String.format("%02d",current_sec%60));
 				}
 			}
 		};
 		
+		
+	//Check Current Puzzle Status
+	//if puzzle is solved, return true else return false
 	protected boolean check_answer(){
 		for(int i = 0 ; i< row;i++){
 			for(int j = 0;j<col; j++){
@@ -55,6 +59,8 @@ public class MainActivity2 extends Activity{
 		return true;
 	}
 	
+	//Click Button Function
+	//Change Text between Black Button and Adjacent Button
 	protected void swap_button(int i, int j){
 		if(i < 0 || i>= row || j < 0 || j>=col)
 			return;
@@ -65,15 +71,18 @@ public class MainActivity2 extends Activity{
 		Button black_btn = (Button)findViewById(black_row * col + black_col);
 		Button swap_btn = (Button)findViewById(i * col + j);
 		
+		//Swap Text and Color
 		black_btn.setBackgroundResource(android.R.drawable.btn_default);
 		CharSequence tmp_text = black_btn.getText();
 		black_btn.setText(swap_btn.getText());
 		swap_btn.setText(tmp_text);
 		swap_btn.setBackgroundColor(Color.BLACK);
+		
 		black_row = i;
 		black_col = j;
 	}
 	
+	//Shuffle Puzzle randomly
 	protected void shuffle(){
 		for(int k = 0 ; k< row*col*10; k++){
 			int tmp = (int)(Math.random() * 4);
@@ -88,6 +97,8 @@ public class MainActivity2 extends Activity{
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.MATCH_PARENT,row);
 			LinearLayout puzzle_linear = new LinearLayout(this);
+			
+			//Set Puzzle Linear Layout Parameter
 			puzzle_linear.setOrientation(LinearLayout.HORIZONTAL);
 			puzzle_linear.setLayoutParams(params);
 			params = new LinearLayout.LayoutParams(
@@ -96,9 +107,13 @@ public class MainActivity2 extends Activity{
 		
 			for(int j = 0 ; j < col; j++){
 				Button puzzle_btn = new Button(this);
+				
+				//Set Puzzle Button Parameter
 				puzzle_btn.setText(Integer.toString(i*col + j +1));
 				puzzle_btn.setLayoutParams(params);
 				puzzle_btn.setId(i*col + j);
+				
+				//Puzzle Button Click Function
 				ltn=new OnClickListener(){
 					public void onClick(View v){
 						swap_button(v.getId()/col,v.getId() % col);
@@ -112,11 +127,16 @@ public class MainActivity2 extends Activity{
 			}
 			linear.addView(puzzle_linear);
 		}
+		
+		//Make Black Button
 		Button tmp = (Button) findViewById(row*col -1);
 		tmp.setBackgroundColor(Color.BLACK);
 		
 	}
 	
+	//Thread View Timer
+	//Check Current Time Every 0.1 Second from Timer Service
+	//for each second, change timer text view by handler message
 	public class ViewTimer implements Runnable{
 		
 		@Override
@@ -138,13 +158,14 @@ public class MainActivity2 extends Activity{
 	    				// TODO Auto-generated catch block
 	    				e.printStackTrace();
 	    			}
+	    			//Timer Service function
 	    			tmp = mService.get_time();
 	    		}
 	    	}
 	}
 	
 	ServiceConnection sconn = new ServiceConnection(){
-        @Override //서비스가 실행될 때 호출
+        @Override //Call when service start
         public void onServiceConnected(ComponentName name, IBinder service) {
             MyService.MyBinder myBinder = (MyService.MyBinder) service;
             mService = myBinder.getService();
@@ -152,7 +173,7 @@ public class MainActivity2 extends Activity{
             Log.e("LOG", "onServiceConnected()");
         }
 
-        @Override //서비스가 종료될 때 호출
+        @Override //Call when Service end
         public void onServiceDisconnected(ComponentName name) {
             mService = null;
             isBind = false;
@@ -175,29 +196,30 @@ public class MainActivity2 extends Activity{
 			public void onClick(View v){
 				String temp=data.getText().toString();
 				if(row * col > 0){
-					
+					//Remove Previous View
 					linear.removeViewsInLayout(3 ,row);
 				}
+				//Get row column from text editor
 				row = Integer.parseInt(temp.split(" ")[0]);
 				col = Integer.parseInt(temp.split(" ")[1]);
+				
+				//set black button row and column
 				black_row = row-1;
 				black_col = col-1;
 				MakeButtons();
 
-				
 				while(check_answer()){
 					shuffle();
 				}
-				
-				 Intent intent = new Intent(
-						 MainActivity2.this, // 현재 화면
-						 MyService.class); // 다음넘어갈 컴퍼넌트
 
-				bindService(intent, // intent 객체
-						 sconn, // 서비스와 연결에 대한 정의
-						 Context.BIND_AUTO_CREATE);
+				//Start Timer Service
+				Intent intent = new Intent(MainActivity2.this,MyService.class);
+
+				bindService(intent, sconn,Context.BIND_AUTO_CREATE);
 				current_sec =0 ;
 				MyService.isStop = false;
+				
+				//Make View Timer Thread
 				if(viewtimer == null){    
 					viewtimer = new Thread(new ViewTimer());
 					viewtimer.start();
